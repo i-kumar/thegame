@@ -73,7 +73,7 @@ typedef struct ledData{
 };
 
 // storage for whole screen
-#define NUM_LEDS 16 * 16
+#define NUM_LEDS 16*16
 struct ledData storage[NUM_LEDS];
 
 // buffer storage
@@ -92,9 +92,9 @@ void writeLedsToBuffer(){
 			int temp = (storage[i].g >> bit) & 1; // take one bit at a time
 			if (temp == 1){
 				// index to spot in buffer
-				pwmBuffer[RESET_PULSES + (i*24) + bit] = 64; // CCR value for high
+				pwmBuffer[RESET_PULSES + (i*24) + 7 - bit] = 64; // CCR value for high
 			} else {
-				pwmBuffer[RESET_PULSES + (i*24) + bit] = 32; // CCR value for low
+				pwmBuffer[RESET_PULSES + (i*24) + 7 - bit] = 32; // CCR value for low
 			}
 		}
 
@@ -103,9 +103,9 @@ void writeLedsToBuffer(){
 			int temp = (storage[i].r >> bit) & 1; // take one bit at a time
 			if (temp == 1){
 				// index to spot in buffer
-				pwmBuffer[RESET_PULSES + (i*24) + 8 + bit] = 64; // CCR value for high
+				pwmBuffer[RESET_PULSES + (i*24) + 8 + 7 - bit] = 64; // CCR value for high
 			} else {
-				pwmBuffer[RESET_PULSES + (i*24) + 8 + bit] = 32; // CCR value for low
+				pwmBuffer[RESET_PULSES + (i*24) + 8 + 7 - bit] = 32; // CCR value for low
 			}
 		}
 
@@ -114,9 +114,9 @@ void writeLedsToBuffer(){
 			int temp = (storage[i].b >> bit) & 1; // take one bit at a time
 			if (temp == 1){
 				// index to spot in buffer
-				pwmBuffer[RESET_PULSES + (i*24) + 16 + bit] = 64; // CCR value for high
+				pwmBuffer[RESET_PULSES + (i*24) + 16 + 7 - bit] = 64; // CCR value for high
 			} else {
-				pwmBuffer[RESET_PULSES + (i*24) + 16 + bit] = 32; // CCR value for low
+				pwmBuffer[RESET_PULSES + (i*24) + 16 + 7 - bit] = 32; // CCR value for low
 			}
 		}
 	}
@@ -124,6 +124,91 @@ void writeLedsToBuffer(){
 
 void showLeds(){
 	HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmBuffer, RESET_PULSES + (NUM_LEDS * 24));
+}
+
+void show373(){
+	storage[224] = (struct ledData){0, 0, 100};
+	  storage[225] = (struct ledData){0, 0, 100};
+	  storage[226] = (struct ledData){0, 0, 100};
+	  storage[228] = (struct ledData){0, 0, 100};
+	  storage[229] = (struct ledData){0, 0, 100};
+	  storage[230] = (struct ledData){0, 0, 100};
+	  storage[232] = (struct ledData){0, 0, 100};
+	  storage[233] = (struct ledData){0, 0, 100};
+	  storage[234] = (struct ledData){0, 0, 100};
+	  storage[236] = (struct ledData){0, 0, 100};
+	  storage[237] = (struct ledData){0, 0, 100};
+	  storage[238] = (struct ledData){0, 0, 100};
+	  storage[223] = (struct ledData){0, 0, 100};
+	  storage[219] = (struct ledData){0, 0, 100};
+	  storage[215] = (struct ledData){0, 0, 100};
+	  storage[211] = (struct ledData){0, 0, 100};
+	  storage[192] = (struct ledData){0, 0, 100};
+	  storage[193] = (struct ledData){0, 0, 100};
+	  storage[194] = (struct ledData){0, 0, 100};
+	  storage[196] = (struct ledData){0, 0, 100};
+	  storage[197] = (struct ledData){0, 0, 100};
+	  storage[198] = (struct ledData){0, 0, 100};
+	  storage[200] = (struct ledData){0, 0, 100};
+	  storage[204] = (struct ledData){0, 0, 100};
+	  storage[205] = (struct ledData){0, 0, 100};
+	  storage[206] = (struct ledData){0, 0, 100};
+	  storage[191] = (struct ledData){0, 0, 100};
+	  storage[187] = (struct ledData){0, 0, 100};
+	  storage[183] = (struct ledData){0, 0, 100};
+	  storage[177] = (struct ledData){0, 0, 100};
+	  storage[160] = (struct ledData){0, 0, 100};
+	  storage[161] = (struct ledData){0, 0, 100};
+	  storage[162] = (struct ledData){0, 0, 100};
+	  storage[164] = (struct ledData){0, 0, 100};
+	  storage[165] = (struct ledData){0, 0, 100};
+	  storage[166] = (struct ledData){0, 0, 100};
+	  storage[168] = (struct ledData){0, 0, 100};
+	  storage[169] = (struct ledData){0, 0, 100};
+	  storage[170] = (struct ledData){0, 0, 100};
+	  storage[172] = (struct ledData){0, 0, 100};
+	  storage[173] = (struct ledData){0, 0, 100};
+	  storage[174] = (struct ledData){0, 0, 100};
+	  storage[129] = (struct ledData){100, 0, 0};
+	  storage[130] = (struct ledData){100, 0, 0};
+	  storage[131] = (struct ledData){100, 0, 0};
+	  storage[134] = (struct ledData){100, 0, 0};
+	  storage[135] = (struct ledData){100, 0, 0};
+	  storage[136] = (struct ledData){100, 0, 0};
+	  storage[137] = (struct ledData){100, 0, 0};
+	  storage[140] = (struct ledData){100, 0, 0};
+	  storage[141] = (struct ledData){100, 0, 0};
+	  storage[142] = (struct ledData){100, 0, 0};
+	  storage[127] = (struct ledData){100, 0, 0};
+	  storage[123] = (struct ledData){100, 0, 0};
+	  storage[118] = (struct ledData){100, 0, 0};
+	  storage[116] = (struct ledData){100, 0, 0};
+	  storage[112] = (struct ledData){100, 0, 0};
+	  storage[100] = (struct ledData){100, 0, 0};
+	  storage[105] = (struct ledData){100, 0, 0};
+	  storage[111] = (struct ledData){100, 0, 0};
+	  storage[94] = (struct ledData){100, 0, 0};
+	  storage[93] = (struct ledData){100, 0, 0};
+	  storage[92] = (struct ledData){100, 0, 0};
+	  storage[87] = (struct ledData){100, 0, 0};
+	  storage[83] = (struct ledData){100, 0, 0};
+	  storage[82] = (struct ledData){100, 0, 0};
+	  storage[81] = (struct ledData){100, 0, 0};
+	  storage[68] = (struct ledData){100, 0, 0};
+	  storage[72] = (struct ledData){100, 0, 0};
+	  storage[79] = (struct ledData){100, 0, 0};
+	  storage[63] = (struct ledData){100, 0, 0};
+	  storage[59] = (struct ledData){100, 0, 0};
+	  storage[56] = (struct ledData){100, 0, 0};
+	  storage[52] = (struct ledData){100, 0, 0};
+	  storage[48] = (struct ledData){100, 0, 0};
+	  storage[33] = (struct ledData){100, 0, 0};
+	  storage[34] = (struct ledData){100, 0, 0};
+	  storage[35] = (struct ledData){100, 0, 0};
+	  storage[39] = (struct ledData){100, 0, 0};
+	  storage[44] = (struct ledData){100, 0, 0};
+	  storage[45] = (struct ledData){100, 0, 0};
+	  storage[46] = (struct ledData){100, 0, 0};
 }
 
 /* USER CODE END 0 */
@@ -161,95 +246,6 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
-  storage[224] = (struct ledData){0, 0, 100};
-  storage[225] = (struct ledData){0, 0, 100};
-  storage[226] = (struct ledData){0, 0, 100};
-  storage[228] = (struct ledData){0, 0, 100};
-  storage[229] = (struct ledData){0, 0, 100};
-  storage[230] = (struct ledData){0, 0, 100};
-  storage[232] = (struct ledData){0, 0, 100};
-  storage[233] = (struct ledData){0, 0, 100};
-  storage[234] = (struct ledData){0, 0, 100};
-  storage[236] = (struct ledData){0, 0, 100};
-  storage[237] = (struct ledData){0, 0, 100};
-  storage[238] = (struct ledData){0, 0, 100};
-  storage[223] = (struct ledData){0, 0, 100};
-  storage[219] = (struct ledData){0, 0, 100};
-  storage[215] = (struct ledData){0, 0, 100};
-  storage[211] = (struct ledData){0, 0, 100};
-  storage[192] = (struct ledData){0, 0, 100};
-  storage[193] = (struct ledData){0, 0, 100};
-  storage[194] = (struct ledData){0, 0, 100};
-  storage[196] = (struct ledData){0, 0, 100};
-  storage[197] = (struct ledData){0, 0, 100};
-  storage[198] = (struct ledData){0, 0, 100};
-  storage[200] = (struct ledData){0, 0, 100};
-  storage[204] = (struct ledData){0, 0, 100};
-  storage[205] = (struct ledData){0, 0, 100};
-  storage[206] = (struct ledData){0, 0, 100};
-  storage[191] = (struct ledData){0, 0, 100};
-  storage[187] = (struct ledData){0, 0, 100};
-  storage[183] = (struct ledData){0, 0, 100};
-  storage[177] = (struct ledData){0, 0, 100};
-  storage[160] = (struct ledData){0, 0, 100};
-  storage[161] = (struct ledData){0, 0, 100};
-  storage[162] = (struct ledData){0, 0, 100};
-  storage[164] = (struct ledData){0, 0, 100};
-  storage[165] = (struct ledData){0, 0, 100};
-  storage[166] = (struct ledData){0, 0, 100};
-  storage[168] = (struct ledData){0, 0, 100};
-  storage[169] = (struct ledData){0, 0, 100};
-  storage[170] = (struct ledData){0, 0, 100};
-  storage[172] = (struct ledData){0, 0, 100};
-  storage[173] = (struct ledData){0, 0, 100};
-  storage[174] = (struct ledData){0, 0, 100};
-  storage[129] = (struct ledData){100, 0, 0};
-  storage[130] = (struct ledData){100, 0, 0};
-  storage[131] = (struct ledData){100, 0, 0};
-  storage[134] = (struct ledData){100, 0, 0};
-  storage[135] = (struct ledData){100, 0, 0};
-  storage[136] = (struct ledData){100, 0, 0};
-  storage[137] = (struct ledData){100, 0, 0};
-  storage[140] = (struct ledData){100, 0, 0};
-  storage[141] = (struct ledData){100, 0, 0};
-  storage[142] = (struct ledData){100, 0, 0};
-  storage[127] = (struct ledData){100, 0, 0};
-  storage[123] = (struct ledData){100, 0, 0};
-  storage[118] = (struct ledData){100, 0, 0};
-  storage[116] = (struct ledData){100, 0, 0};
-  storage[112] = (struct ledData){100, 0, 0};
-  storage[100] = (struct ledData){100, 0, 0};
-  storage[105] = (struct ledData){100, 0, 0};
-  storage[111] = (struct ledData){100, 0, 0};
-  storage[94] = (struct ledData){100, 0, 0};
-  storage[93] = (struct ledData){100, 0, 0};
-  storage[92] = (struct ledData){100, 0, 0};
-  storage[87] = (struct ledData){100, 0, 0};
-  storage[83] = (struct ledData){100, 0, 0};
-  storage[82] = (struct ledData){100, 0, 0};
-  storage[81] = (struct ledData){100, 0, 0};
-  storage[68] = (struct ledData){100, 0, 0};
-  storage[72] = (struct ledData){100, 0, 0};
-  storage[79] = (struct ledData){100, 0, 0};
-  storage[63] = (struct ledData){100, 0, 0};
-  storage[59] = (struct ledData){100, 0, 0};
-  storage[56] = (struct ledData){100, 0, 0};
-  storage[52] = (struct ledData){100, 0, 0};
-  storage[48] = (struct ledData){100, 0, 0};
-  storage[33] = (struct ledData){100, 0, 0};
-  storage[34] = (struct ledData){100, 0, 0};
-  storage[35] = (struct ledData){100, 0, 0};
-  storage[39] = (struct ledData){100, 0, 0};
-  storage[44] = (struct ledData){100, 0, 0};
-  storage[45] = (struct ledData){100, 0, 0};
-  storage[46] = (struct ledData){100, 0, 0};
-  writeLedsToBuffer();
-  showLeds();
-
-  //uint32_t testBuff[NUM_LEDS * 24]; // 24 bits per led
-  //for (int i = 0; i < NUM_LEDS * 24; i++){
-	//  testBuff[i] = pwmBuffer[i];
-  //}
 
   //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
   //HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
@@ -257,17 +253,72 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  int currLimit = 0;
+  //int currLimit = 0;
+  //int currentColor = 0; //0 = red, 1 = green, 2 = blue
+  int currBrightness = 0;
+  int climbing = 1;
 
   while (1)
   {
     /* USER CODE END WHILE */
-	  //if(currLimit < 16*16){
-		//  storage[currLimit] = (struct ledData){255, 0, 0};
-		//  writeLedsToBuffer();
-		//  currLimit++;
-	  //}
 
+	  if (climbing){
+		  if (currBrightness > 100){
+			  climbing = 0;
+		  } else {
+			  currBrightness++;
+		  }
+	  } else {
+		  if (currBrightness < 1){
+			  climbing = 1;
+		  } else {
+			  currBrightness--;
+		  }
+	  }
+
+	  for (int i = 0; i < NUM_LEDS; i++){
+		  storage[i] = (struct ledData){currBrightness, currBrightness, currBrightness};
+	  }
+	  //for (int i = 0; i < currBrightness; i++){
+		//  storage[i] = (struct ledData){255, 0, 0};
+	  //}
+	  writeLedsToBuffer();
+
+
+	  /*
+	  if (currentColor == 0){
+		  if(currLimit < 16*16){
+			  storage[currLimit] = (struct ledData){10, 0, 0};
+			  writeLedsToBuffer();
+			  currLimit++;
+		  }  else {
+			  currentColor = 1;
+			  currLimit = 0;
+		  }
+	  }
+
+	  if (currentColor == 1){
+		  if(currLimit < 16*16){
+			  storage[currLimit] = (struct ledData){0, 10, 0};
+			  writeLedsToBuffer();
+			  currLimit++;
+		  }  else {
+			  currentColor = 2;
+			  currLimit = 0;
+		  }
+	  }
+
+	  if (currentColor == 2){
+		  if(currLimit < 16*16){
+			  storage[currLimit] = (struct ledData){0, 0, 10};
+			  writeLedsToBuffer();
+			  currLimit++;
+		  }  else {
+			  currentColor = 0;
+			  currLimit = 0;
+		  }
+	  }
+	  */
 	  showLeds();
 	  HAL_Delay(30);
     /* USER CODE BEGIN 3 */
