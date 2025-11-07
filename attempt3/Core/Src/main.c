@@ -40,6 +40,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+
 TIM_HandleTypeDef htim2;
 DMA_HandleTypeDef hdma_tim2_ch1;
 
@@ -52,6 +54,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -127,7 +130,12 @@ void showLeds(){
 	HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmBuffer, RESET_PULSES + (NUM_LEDS * 24));
 }
 
-// test this
+void clearScreen(){
+	for (int i = 0; i < 256; i++){
+		storage[i] = (struct ledData){0, 0, 0};
+	}
+}
+
 // x and y -> 0 to 15 each.
 // r, g, and b -> 0 to 255 each.
 void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
@@ -178,6 +186,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_TIM2_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -194,12 +203,161 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  showLogo();
-	  showLeds();
-	  HAL_Delay(200);
+	  playPong();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+// GAMES: -------------------------------------------------------------------------
+
+void playPong(){
+	// PONG - rewritten for the game
+	// by Ishan Kumar: 11/7/2025
+
+	int ballX = 1;
+	int ballY = 4;
+
+	/*
+	STATE MACHINE FOR BALL DIRECTION
+	> UP:
+	0 = left fast
+	1 = left
+	2 = right
+	3 = right fast
+	> DOWN
+	4 = left fast
+	5 = left
+	6 = right
+	7 = right fast
+	*/
+	int ballStateMachine = 3;
+
+	// we don't want to move the ball every frame. The prescaler will move the ball every n frames
+	int ballPrescaler = 2;
+	int ballCurrN = 0;
+
+	int lose = 0;
+
+	while (!lose){
+		// read pot
+		uint32_t ADC_VAL = 0;
+		HAL_ADC_Start(&hadc1);//start conversion
+		HAL_ADC_PollForConversion(&hadc1, 0xFFFFFFFF);//wait for conversion to finish
+		ADC_VAL = HAL_ADC_GetValue(&hadc1);//retrieve value
+
+		// turn value into x value from 0 to 12
+		int pot = ADC_VAL / 16; // standardize
+		pot = (pot / 8) - 6; // put it on the range from 0 to 12
+		if (pot < 0) pot = 0;
+		if (pot > 12) pot = 12;
+		pot = 12 - pot; // guess i had the direction reversed oops
+
+		// start drawing screen
+		clearScreen();
+
+		// draw paddle
+		for (int i = pot; i < pot + 4; i++){
+			setPixel(i, 1, 0, 50, 50);
+		}
+
+		// decide whether to move the ball
+		if (ballCurrN < ballPrescaler){
+			ballCurrN++;
+			setPixel(ballX, ballY, 0, 50, 0);
+		} else {
+			ballCurrN = 0;
+
+			// getting rid of edge cases
+			if (ballX == 1){
+				if (ballStateMachine == 0){
+					ballStateMachine = 1;
+				}
+				if (ballStateMachine == 4){
+					ballStateMachine = 5;
+				}
+			} else if (ballX == 14){
+				if (ballStateMachine == 7){
+					ballStateMachine = 6;
+				}
+				if (ballStateMachine == 3){
+					ballStateMachine = 2;
+				}
+			}
+
+			// left side bounce
+			if (ballX == 0){
+				if (ballStateMachine == 0) ballStateMachine = 3;
+				if (ballStateMachine == 1) ballStateMachine = 2;
+				if (ballStateMachine == 4) ballStateMachine = 7;
+				if (ballStateMachine == 5) ballStateMachine = 6;
+			}
+			// right side bounce
+			if (ballX == 15){
+				if (ballStateMachine == 2) ballStateMachine = 1;
+				if (ballStateMachine == 3) ballStateMachine = 0;
+				if (ballStateMachine == 6) ballStateMachine = 5;
+				if (ballStateMachine == 7) ballStateMachine = 4;
+			}
+			// top bounce
+			if (ballY == 15){
+				ballStateMachine += 4;
+			}
+			// bottom bounce
+			if (ballY == 2){
+				if (ballX == pot){
+					ballStateMachine = 0;
+				} else if (ballX == pot + 1){
+					ballStateMachine = 1;
+				} else if (ballX == pot + 2){
+					ballStateMachine = 2;
+				} else if (ballX == pot + 3){
+					ballStateMachine = 3;
+				} else {
+					lose = 1; // ggs
+				}
+			}
+
+			// animate ball
+			if (ballStateMachine == 0){
+				ballX -= 2;
+				ballY += 1;
+			} else if (ballStateMachine == 1){
+				ballX -= 1;
+				ballY += 1;
+			} else if (ballStateMachine == 2){
+				ballX += 1;
+				ballY += 1;
+			} else if (ballStateMachine == 3){
+				ballX += 2;
+				ballY += 1;
+			} else if (ballStateMachine == 4){
+				ballX -= 2;
+				ballY -= 1;
+			} else if (ballStateMachine == 5){
+				ballX -= 1;
+				ballY -= 1;
+			} else if (ballStateMachine == 6){
+				ballX += 1;
+				ballY -= 1;
+			} else if (ballStateMachine == 7){
+				ballX += 2;
+				ballY -= 1;
+			}
+			setPixel(ballX, ballY, 0, 50, 0);
+		}
+		showLeds();
+		HAL_Delay(30);
+	}
+
+	// lose animation
+	for (int j = 16; j >= 0; j--){
+		for (int i = 0; i < 16; i++){
+			setPixel(i, j, 50, 0, 0);
+		}
+		showLeds();
+		HAL_Delay(50);
+	}
 }
 
 
@@ -412,6 +570,64 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Common config
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV32;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc1.Init.OversamplingMode = DISABLE;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_640CYCLES_5;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
   * @brief TIM2 Initialization Function
   * @param None
   * @retval None
@@ -534,20 +750,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF13_SAI1;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC0 PC1 PC2 PC3
-                           PC4 PC5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
-                          |GPIO_PIN_4|GPIO_PIN_5;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA1 PA3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /*Configure GPIO pins : PA4 PA5 PA6 PA7 */
   GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -562,12 +764,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PB1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
-  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB2 PB6 */
