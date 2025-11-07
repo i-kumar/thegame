@@ -145,6 +145,66 @@ void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
   storage[realIndex] = (struct ledData){r, g, b};
 }
 
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_TIM2_Init();
+  /* USER CODE BEGIN 2 */
+
+
+  //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
+  //HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  //int currLimit = 0;
+  //int currentColor = 0; //0 = red, 1 = green, 2 = blue
+  
+
+  while (1)
+  {
+    /* USER CODE END WHILE */
+    showLogo();
+	  showLeds();
+	  HAL_Delay(1000);
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
+}
+
+
+// FULL SCREEN IMAGES: ------------------------------------------------------------
+
 // shows "eecs 373" on the led display
 void show373(){
 	  storage[224] = (struct ledData){0, 0, 100};
@@ -231,80 +291,74 @@ void show373(){
 	  storage[46] = (struct ledData){100, 0, 0};
 }
 
-/* USER CODE END 0 */
+void showLogo(){
+  // t
+  setPixel(0, 11, 204, 0, 0);
+  setPixel(1, 12, 204, 0, 0);
+  setPixel(1, 11, 204, 0, 0);
+  setPixel(1, 10, 204, 0, 0);
+  setPixel(1, 9, 204, 0, 0);
+  setPixel(2, 11, 204, 0, 0);
+  // h
+  setPixel(4, 12, 204, 0, 0);
+  setPixel(4, 11, 204, 0, 0);
+  setPixel(4, 10, 204, 0, 0);
+  setPixel(4, 19, 204, 0, 0);
+  setPixel(5, 10, 204, 0, 0);
+  setPixel(6, 10, 204, 0, 0);
+  setPixel(6, 9, 204, 0, 0);
+  // e
+  setPixel(8, 11, 204, 0, 0);
+  setPixel(8, 10, 204, 0, 0);
+  setPixel(8, 9, 204, 0, 0);
+  setPixel(9, 11, 204, 0, 0);
+  setPixel(9, 10, 204, 0, 0);
+  setPixel(9, 9, 204, 0, 0);
+  setPixel(10, 11, 204, 0, 0);
+  setPixel(10, 9, 204, 0, 0);
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
+  // g
+  setPixel(0, 7, 234, 153, 153);
+  setPixel(0, 6, 234, 153, 153);
+  setPixel(0, 5, 234, 153, 153);
+  setPixel(0, 3, 234, 153, 153);
+  setPixel(1, 7, 234, 153, 153);
+  setPixel(1, 5, 234, 153, 153);
+  setPixel(1, 3, 234, 153, 153);
+  setPixel(2, 7, 234, 153, 153);
+  setPixel(2, 6, 234, 153, 153);
+  setPixel(2, 5, 234, 153, 153);
+  setPixel(2, 4, 234, 153, 153);
+  setPixel(2, 3, 234, 153, 153);
+  // a 
+  setPixel(4, 7, 234, 153, 153);
+  setPixel(4, 6, 234, 153, 153);
+  setPixel(4, 5, 234, 153, 153);
+  setPixel(5, 7, 234, 153, 153);
+  setPixel(5, 5, 234, 153, 153);
+  setPixel(6, 7, 234, 153, 153);
+  setPixel(6, 6, 234, 153, 153);
+  setPixel(6, 5, 234, 153, 153);
+  setPixel(7, 5, 234, 153, 153);
+  // m
+  setPixel(8, 7, 234, 153, 153);
+  setPixel(8, 6, 234, 153, 153);
+  setPixel(8, 5, 234, 153, 153);
+  setPixel(9, 7, 234, 153, 153);
+  setPixel(10, 7, 234, 153, 153);
+  setPixel(10, 6, 234, 153, 153);
+  setPixel(10, 5, 234, 153, 153);
+  setPixel(11, 7, 234, 153, 153);
+  setPixel(12, 7, 234, 153, 153);
+  setPixel(12, 6, 234, 153, 153);
+  setPixel(12, 5, 234, 153, 153);
+  // e
+  setPixel(14, 7, 234, 153, 153);
+  setPixel(14, 6, 234, 153, 153);
+  setPixel(14, 5, 234, 153, 153);
+  setPixel(15, 7, 234, 153, 153);
+  setPixel(15, 5, 234, 153, 153);
 
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_TIM2_Init();
-  /* USER CODE BEGIN 2 */
-
-
-  //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
-  //HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  //int currLimit = 0;
-  //int currentColor = 0; //0 = red, 1 = green, 2 = blue
-  int currBrightness = 0;
-  int climbing = 1;
-
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-	  if (climbing){
-		  if (currBrightness > 100){
-			  climbing = 0;
-		  } else {
-			  currBrightness++;
-		  }
-	  } else {
-		  if (currBrightness < 1){
-			  climbing = 1;
-		  } else {
-			  currBrightness--;
-		  }
-	  }
-
-	  for (int i = 0; i < NUM_LEDS; i++){
-		  storage[i] = (struct ledData){currBrightness, currBrightness, currBrightness};
-	  }
-
-	  showLeds();
-	  HAL_Delay(30);
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
 }
 
 /**
