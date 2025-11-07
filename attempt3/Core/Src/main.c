@@ -128,10 +128,10 @@ void showLeds(){
 }
 
 // test this
-// x and y -> 0 to 15 each. 
+// x and y -> 0 to 15 each.
 // r, g, and b -> 0 to 255 each.
 void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
-  
+
   int realIndex = 0;
 
   if (y % 2 == 0) {
@@ -141,7 +141,7 @@ void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
     // odd row (reversed)
     realIndex = y * 16 + (16 - 1 - x);
   }
-  
+
   storage[realIndex] = (struct ledData){r, g, b};
 }
 
@@ -189,14 +189,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   //int currLimit = 0;
   //int currentColor = 0; //0 = red, 1 = green, 2 = blue
-  
+
 
   while (1)
   {
     /* USER CODE END WHILE */
-    showLogo();
+	  showLogo();
 	  showLeds();
-	  HAL_Delay(1000);
+	  HAL_Delay(200);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -303,7 +303,7 @@ void showLogo(){
   setPixel(4, 12, 204, 0, 0);
   setPixel(4, 11, 204, 0, 0);
   setPixel(4, 10, 204, 0, 0);
-  setPixel(4, 19, 204, 0, 0);
+  setPixel(4, 9, 204, 0, 0);
   setPixel(5, 10, 204, 0, 0);
   setPixel(6, 10, 204, 0, 0);
   setPixel(6, 9, 204, 0, 0);
@@ -318,46 +318,46 @@ void showLogo(){
   setPixel(10, 9, 204, 0, 0);
 
   // g
-  setPixel(0, 7, 234, 153, 153);
-  setPixel(0, 6, 234, 153, 153);
-  setPixel(0, 5, 234, 153, 153);
-  setPixel(0, 3, 234, 153, 153);
-  setPixel(1, 7, 234, 153, 153);
-  setPixel(1, 5, 234, 153, 153);
-  setPixel(1, 3, 234, 153, 153);
-  setPixel(2, 7, 234, 153, 153);
-  setPixel(2, 6, 234, 153, 153);
-  setPixel(2, 5, 234, 153, 153);
-  setPixel(2, 4, 234, 153, 153);
-  setPixel(2, 3, 234, 153, 153);
-  // a 
-  setPixel(4, 7, 234, 153, 153);
-  setPixel(4, 6, 234, 153, 153);
-  setPixel(4, 5, 234, 153, 153);
-  setPixel(5, 7, 234, 153, 153);
-  setPixel(5, 5, 234, 153, 153);
-  setPixel(6, 7, 234, 153, 153);
-  setPixel(6, 6, 234, 153, 153);
-  setPixel(6, 5, 234, 153, 153);
-  setPixel(7, 5, 234, 153, 153);
+  setPixel(0, 7, 234, 24, 24);
+  setPixel(0, 6, 234, 24, 24);
+  setPixel(0, 5, 234, 24, 24);
+  setPixel(0, 3, 234, 24, 24);
+  setPixel(1, 7, 234, 24, 24);
+  setPixel(1, 5, 234, 24, 24);
+  setPixel(1, 3, 234, 24, 24);
+  setPixel(2, 7, 234, 24, 24);
+  setPixel(2, 6, 234, 24, 24);
+  setPixel(2, 5, 234, 24, 24);
+  setPixel(2, 4, 234, 24, 24);
+  setPixel(2, 3, 234, 24, 24);
+  // a
+  setPixel(4, 7, 234, 24, 24);
+  setPixel(4, 6, 234, 24, 24);
+  setPixel(4, 5, 234, 24, 24);
+  setPixel(5, 7, 234, 24, 24);
+  setPixel(5, 5, 234, 24, 24);
+  setPixel(6, 7, 234, 24, 24);
+  setPixel(6, 6, 234, 24, 24);
+  setPixel(6, 5, 234, 24, 24);
+  setPixel(7, 5, 234, 24, 24);
   // m
-  setPixel(8, 7, 234, 153, 153);
-  setPixel(8, 6, 234, 153, 153);
-  setPixel(8, 5, 234, 153, 153);
-  setPixel(9, 7, 234, 153, 153);
-  setPixel(10, 7, 234, 153, 153);
-  setPixel(10, 6, 234, 153, 153);
-  setPixel(10, 5, 234, 153, 153);
-  setPixel(11, 7, 234, 153, 153);
-  setPixel(12, 7, 234, 153, 153);
-  setPixel(12, 6, 234, 153, 153);
-  setPixel(12, 5, 234, 153, 153);
+  setPixel(8, 7, 234, 24, 24);
+  setPixel(8, 6, 234, 24, 24);
+  setPixel(8, 5, 234, 24, 24);
+  setPixel(9, 7, 234, 24, 24);
+  setPixel(10, 7, 234, 24, 24);
+  setPixel(10, 6, 234, 24, 24);
+  setPixel(10, 5, 234, 24, 24);
+  setPixel(11, 7, 234, 24, 24);
+  setPixel(12, 7, 234, 24, 24);
+  setPixel(12, 6, 234, 24, 24);
+  setPixel(12, 5, 234, 24, 24);
   // e
-  setPixel(14, 7, 234, 153, 153);
-  setPixel(14, 6, 234, 153, 153);
-  setPixel(14, 5, 234, 153, 153);
-  setPixel(15, 7, 234, 153, 153);
-  setPixel(15, 5, 234, 153, 153);
+  setPixel(14, 7, 234, 24, 24);
+  setPixel(14, 6, 234, 24, 24);
+  setPixel(14, 5, 234, 24, 24);
+  setPixel(15, 7, 234, 24, 24);
+  setPixel(15, 5, 234, 24, 24);
 
 }
 
