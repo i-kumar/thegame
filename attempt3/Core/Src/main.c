@@ -123,11 +123,31 @@ void writeLedsToBuffer(){
 }
 
 void showLeds(){
+	writeLedsToBuffer();
 	HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmBuffer, RESET_PULSES + (NUM_LEDS * 24));
 }
 
+// test this
+// x and y -> 0 to 15 each. 
+// r, g, and b -> 0 to 255 each.
+void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
+  
+  int realIndex = 0;
+
+  if (y % 2 == 0) {
+    // even row
+    realIndex = y * 16 + x;
+  } else {
+    // odd row (reversed)
+    realIndex = y * 16 + (16 - 1 - x);
+  }
+  
+  storage[realIndex] = (struct ledData){r, g, b};
+}
+
+// shows "eecs 373" on the led display
 void show373(){
-	storage[224] = (struct ledData){0, 0, 100};
+	  storage[224] = (struct ledData){0, 0, 100};
 	  storage[225] = (struct ledData){0, 0, 100};
 	  storage[226] = (struct ledData){0, 0, 100};
 	  storage[228] = (struct ledData){0, 0, 100};
@@ -279,46 +299,7 @@ int main(void)
 	  for (int i = 0; i < NUM_LEDS; i++){
 		  storage[i] = (struct ledData){currBrightness, currBrightness, currBrightness};
 	  }
-	  //for (int i = 0; i < currBrightness; i++){
-		//  storage[i] = (struct ledData){255, 0, 0};
-	  //}
-	  writeLedsToBuffer();
 
-
-	  /*
-	  if (currentColor == 0){
-		  if(currLimit < 16*16){
-			  storage[currLimit] = (struct ledData){10, 0, 0};
-			  writeLedsToBuffer();
-			  currLimit++;
-		  }  else {
-			  currentColor = 1;
-			  currLimit = 0;
-		  }
-	  }
-
-	  if (currentColor == 1){
-		  if(currLimit < 16*16){
-			  storage[currLimit] = (struct ledData){0, 10, 0};
-			  writeLedsToBuffer();
-			  currLimit++;
-		  }  else {
-			  currentColor = 2;
-			  currLimit = 0;
-		  }
-	  }
-
-	  if (currentColor == 2){
-		  if(currLimit < 16*16){
-			  storage[currLimit] = (struct ledData){0, 0, 10};
-			  writeLedsToBuffer();
-			  currLimit++;
-		  }  else {
-			  currentColor = 0;
-			  currLimit = 0;
-		  }
-	  }
-	  */
 	  showLeds();
 	  HAL_Delay(30);
     /* USER CODE BEGIN 3 */
