@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -85,56 +85,13 @@ void PS2_MainTask(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/**
- * @brief Send and receive one byte via SPI
- */
+
 uint8_t PS2_TransferByte(uint8_t data) {
     uint8_t rx_data;
     HAL_SPI_TransmitReceive(&hspi1, &data, &rx_data, 1, 100);
     return rx_data;
 }
 
-/**
- * @brief Read PS2 controller data
- * @param buttons Pointer to store button data (16-bit)
- * @return 1 if successful, 0 if failed
- */
-//uint8_t PS2_ReadController(uint16_t *buttons) {
-//    uint8_t data[9] = {0};
-//
-//    // Pull ATT low to start communication
-//    PS2_CS_LOW();
-//    HAL_Delay(1);  // Small delay for stability
-//
-//    // Send command sequence
-//    data[0] = PS2_TransferByte(0x01);  // Start byte
-//    data[1] = PS2_TransferByte(0x42);  // Poll command
-//    data[2] = PS2_TransferByte(0x00);  // Padding
-//    data[3] = PS2_TransferByte(0x00);  // Button data byte 1
-//    data[4] = PS2_TransferByte(0x00);  // Button data byte 2
-//    data[5] = PS2_TransferByte(0x00);  // Right joystick X
-//    data[6] = PS2_TransferByte(0x00);  // Right joystick Y
-//    data[7] = PS2_TransferByte(0x00);  // Left joystick X
-//    data[8] = PS2_TransferByte(0x00);  // Left joystick Y
-//
-//    // Pull ATT high to end communication
-//    PS2_CS_HIGH();
-//    HAL_Delay(1);
-//
-//    //debug statement
-//    printf("Response bytes: %02X %02X %02X %02X %02X\r\n",
-//           data[0], data[1], data[2], data[3], data[4]);
-//
-//    // Check if controller responded (should be 0x41 or 0x73)
-//    if (data[1] != 0x41 && data[1] != 0x73) {
-//        return 0;  // Communication failed
-//    }
-//
-//    // Combine button bytes (buttons are active LOW)
-//    *buttons = (data[4] << 8) | data[3];
-//
-//    return 1;  // Success
-//}
 
 //debugging below
 uint8_t PS2_ReadController(uint16_t *buttons) {
@@ -148,7 +105,8 @@ uint8_t PS2_ReadController(uint16_t *buttons) {
     data[0] = PS2_TransferByte(0x01);
     data[1] = PS2_TransferByte(0x42);
     data[2] = PS2_TransferByte(0x00);
-    data[3] = PS2_TransferByte(0x00);
+    data[3] = PS2_TransferByte(0x00); //pay attention to this one when seeing registers,
+    //dpad will update the 4th byte, regrence doumentation for clarification
     data[4] = PS2_TransferByte(0x00);
     data[5] = PS2_TransferByte(0x00);
     data[6] = PS2_TransferByte(0x00);
@@ -159,7 +117,7 @@ uint8_t PS2_ReadController(uint16_t *buttons) {
     PS2_CS_HIGH();
     HAL_Delay(10);
 
-    // DEBUG: Print EVERYTHING we received
+   //debug
 //    printf("Response bytes: %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n",
 //           data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
 
@@ -167,9 +125,7 @@ uint8_t PS2_ReadController(uint16_t *buttons) {
     *buttons = (data[4] << 8) | data[3];
     return 1;
 }
-/**
- * @brief Initialize PS2 controller
- */
+
 void PS2_Init(void) {
     PS2_CS_HIGH();
     HAL_Delay(500);  // Let controller fully stabilize
@@ -191,25 +147,18 @@ void PS2_Init(void) {
     printf("Ready! Starting value: %ld\r\n\r\n", current_value);
 }
 
-/**
- * @brief Process button presses and update value
- */
+
 void PS2_ProcessButtons(uint16_t buttons) {
-    // Ignore if we get all 1's (no valid data)
+
     if (buttons == 0xFFFF) {
         return;
     }
-
-    // Detect new button presses (edge detection)
     uint16_t pressed = (~buttons) & (prev_buttons);
     prev_buttons = buttons;
-
-    // Only process if there was actually a change
     if (pressed == 0) {
-        return;  // No new button presses
+        return;
     }
 
-    // UP: Add 2
     if (pressed & PS2_UP) {
         current_value += 2;
         printf("UP pressed:    %ld\r\n", current_value);
@@ -231,76 +180,13 @@ void PS2_ProcessButtons(uint16_t buttons) {
     }
 }
 
-/**
- * @brief Main PS2 task - call this in main loop
- */
-//void PS2_MainTask(void) {
-//    uint16_t buttons;
-//
-//    if (PS2_ReadController(&buttons)) {
-//        PS2_ProcessButtons(buttons);
-//    } else {
-//        printf("Controller read failed! Check connections.\r\n");
-//    }
-//
-//    HAL_Delay(50);  // Poll every 50ms
-//}
-
-
-//main code function
-//void PS2_MainTask(void) {
-//    static uint8_t toggle = 0;
-//
-//    // Toggle CS line
-//    if (toggle) {
-//        PS2_CS_HIGH();
-//        printf("CS HIGH\r\n");
-//    } else {
-//        PS2_CS_LOW();
-//        printf("CS LOW\r\n");
-//    }
-//    toggle = !toggle;
-//
-//    HAL_Delay(500);
-//}
-//////main code function above ^
-
-
-
-//void PS2_MainTask(void) {
-//    uint16_t buttons;
-//    static uint8_t error_count = 0;
-//
-//    if (PS2_ReadController(&buttons)) {
-//        PS2_ProcessButtons(buttons);
-//        error_count = 0;  // Reset error counter on success
-//    } else {
-//        error_count++;
-//        // Only print error occasionally, not every time
-//        if (error_count == 50) {
-//            printf("Warning: Controller communication unstable\r\n");
-//            error_count = 0;
-//        }
-//    }
-//
-//    HAL_Delay(30);  // 30ms polling
-//}
-//void PS2_MainTask(void) {
-//    uint16_t buttons;
-//
-//    if (PS2_ReadController(&buttons)) {
-//        PS2_ProcessButtons(buttons);
-//    }
-//
-//    HAL_Delay(50);  // Poll every 50ms
-//}
 
 void PS2_MainTask(void){
     uint16_t buttons;
 
     PS2_ReadController(&buttons);
 
-    HAL_Delay(500);  // Slow polling so you can read the output
+    HAL_Delay(500);  // polling
 }
 /* USER CODE END 0 */
 
@@ -339,13 +225,7 @@ int main(void)
   // Initialize PS2 Controller
     PS2_Init();
 
-//    printf("Starting value: %ld\r\n", current_value);
-//    printf("\r\nPress D-Pad buttons:\r\n");
-//    printf("  UP    -> Add 2\r\n");
-//    printf("  DOWN  -> Subtract 2\r\n");
-//    printf("  LEFT  -> Divide by 2\r\n");
-//    printf("  RIGHT -> Multiply by 2\r\n");
-//    printf("\r\nWaiting for input...\r\n\r\n");
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
