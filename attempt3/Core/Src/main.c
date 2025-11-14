@@ -31,7 +31,26 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define PS2_SELECT      0x0001
+#define PS2_L3          0x0002
+#define PS2_R3          0x0004
+#define PS2_START       0x0008
+#define PS2_UP          0x0010
+#define PS2_RIGHT       0x0020
+#define PS2_DOWN        0x0040
+#define PS2_LEFT        0x0080
+#define PS2_L2          0x0100
+#define PS2_R2          0x0200
+#define PS2_L1          0x0400
+#define PS2_R1          0x0800
+#define PS2_TRIANGLE    0x1000
+#define PS2_CIRCLE      0x2000
+#define PS2_CROSS       0x4000
+#define PS2_SQUARE      0x8000
 
+// CS control macros
+#define PS2_CS_LOW()  HAL_GPIO_WritePin(PS2_CS_GPIO_Port, PS2_CS_Pin, GPIO_PIN_RESET)
+#define PS2_CS_HIGH() HAL_GPIO_WritePin(PS2_CS_GPIO_Port, PS2_CS_Pin, GPIO_PIN_SET)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -40,12 +59,16 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
+SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
 DMA_HandleTypeDef hdma_tim2_ch1;
 
 /* USER CODE BEGIN PV */
+
+// PS2 Controller variables
+int32_t current_value = 50;
+uint16_t prev_buttons = 0xFFFF;
 
 /* USER CODE END PV */
 
@@ -54,13 +77,117 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM2_Init(void);
-static void MX_ADC1_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
+
+// PS2 Controller function prototypes
+uint8_t PS2_TransferByte(uint8_t data);
+uint8_t PS2_ReadController(uint16_t *buttons);
+void PS2_Init(void);
+void PS2_ProcessButtons(uint16_t buttons);
+void PS2_MainTask(void);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+int cursorX = 0;
+int cursorY = 0;
+
+uint8_t PS2_TransferByte(uint8_t data) {
+    uint8_t rx_data;
+    HAL_SPI_TransmitReceive(&hspi1, &data, &rx_data, 1, 100);
+    return rx_data;
+}
+
+
+//debugging below
+uint8_t PS2_ReadController(uint16_t *buttons) {
+    uint8_t data[9] = {0};
+
+    // Pull ATT low to start communication
+    PS2_CS_LOW();
+    HAL_Delay(20);
+
+    // Send command sequence
+    uint8_t cmd[9] = {0x01, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    HAL_SPI_TransmitReceive(&hspi1, cmd, data, 9, 100);
+    // Pull ATT high to end communication
+    PS2_CS_HIGH();
+    HAL_Delay(10);
+
+   //debug
+//    printf("Response bytes: %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n",
+//           data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
+
+     //DON'T validate - just always return success for debugging
+    *buttons = (data[4] << 8) | data[3];
+   // printf("button value: %x", *buttons);
+    return 1;
+}
+
+void PS2_Init(void) {
+    PS2_CS_HIGH();
+    HAL_Delay(500);  // Let controller fully stabilize
+
+    printf("\r\n========================================\r\n");
+    printf("PS2 Controller Initialized\r\n");
+    printf("========================================\r\n");
+
+    // Flush initial garbage reads - READ BUT IGNORE
+    uint16_t dummy;
+    for (int i = 0; i < 10; i++) {
+        PS2_ReadController(&dummy);
+        HAL_Delay(50);
+    }
+
+    // Reset button state after flushing
+    prev_buttons = 0xFFFF;  // All buttons released
+
+    printf("Ready! Starting value: %ld\r\n\r\n", current_value);
+}
+
+
+void PS2_ProcessButtons(uint16_t buttons) {
+
+    if (buttons == 0xFFFF) {
+        return;
+    }
+    uint16_t pressed = (~buttons) & (prev_buttons);
+    prev_buttons = buttons;
+    if (pressed == 0) {
+        return;
+    }
+
+    if (pressed & PS2_UP) {
+        cursorY++;
+        printf("UP pressed:    %ld\r\n", current_value);
+    }
+
+    if (pressed & PS2_DOWN) {
+        cursorY--;
+        printf("DOWN pressed:  %ld\r\n", current_value);
+    }
+
+    if (pressed & PS2_LEFT) {
+        cursorX--;
+        printf("LEFT pressed:  %ld\r\n", current_value);
+    }
+
+    if (pressed & PS2_RIGHT) {
+        cursorX++;
+        printf("RIGHT pressed: %ld\r\n", current_value);
+    }
+}
+
+
+void PS2_MainTask(void){
+    uint16_t buttons;
+
+    PS2_ReadController(&buttons);
+    PS2_ProcessButtons(buttons);
+}
 
 // this code runs when the data transfer is complete and stops it from repeating
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim){
@@ -95,9 +222,9 @@ void writeLedsToBuffer(){
 			int temp = (storage[i].g >> bit) & 1; // take one bit at a time
 			if (temp == 1){
 				// index to spot in buffer
-				pwmBuffer[RESET_PULSES + (i*24) + 7 - bit] = 64; // CCR value for high
+				pwmBuffer[RESET_PULSES + (i*24) + 7 - bit] = 32; // CCR value for high
 			} else {
-				pwmBuffer[RESET_PULSES + (i*24) + 7 - bit] = 32; // CCR value for low
+				pwmBuffer[RESET_PULSES + (i*24) + 7 - bit] = 16; // CCR value for low
 			}
 		}
 
@@ -106,9 +233,9 @@ void writeLedsToBuffer(){
 			int temp = (storage[i].r >> bit) & 1; // take one bit at a time
 			if (temp == 1){
 				// index to spot in buffer
-				pwmBuffer[RESET_PULSES + (i*24) + 8 + 7 - bit] = 64; // CCR value for high
+				pwmBuffer[RESET_PULSES + (i*24) + 8 + 7 - bit] = 32; // CCR value for high
 			} else {
-				pwmBuffer[RESET_PULSES + (i*24) + 8 + 7 - bit] = 32; // CCR value for low
+				pwmBuffer[RESET_PULSES + (i*24) + 8 + 7 - bit] = 16; // CCR value for low
 			}
 		}
 
@@ -117,9 +244,9 @@ void writeLedsToBuffer(){
 			int temp = (storage[i].b >> bit) & 1; // take one bit at a time
 			if (temp == 1){
 				// index to spot in buffer
-				pwmBuffer[RESET_PULSES + (i*24) + 16 + 7 - bit] = 64; // CCR value for high
+				pwmBuffer[RESET_PULSES + (i*24) + 16 + 7 - bit] = 32; // CCR value for high
 			} else {
-				pwmBuffer[RESET_PULSES + (i*24) + 16 + 7 - bit] = 32; // CCR value for low
+				pwmBuffer[RESET_PULSES + (i*24) + 16 + 7 - bit] = 16; // CCR value for low
 			}
 		}
 	}
@@ -130,12 +257,7 @@ void showLeds(){
 	HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmBuffer, RESET_PULSES + (NUM_LEDS * 24));
 }
 
-void clearScreen(){
-	for (int i = 0; i < 256; i++){
-		storage[i] = (struct ledData){0, 0, 0};
-	}
-}
-
+// test this
 // x and y -> 0 to 15 each.
 // r, g, and b -> 0 to 255 each.
 void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
@@ -186,7 +308,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_TIM2_Init();
-  MX_ADC1_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -203,161 +325,15 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  playPong();
+
     /* USER CODE BEGIN 3 */
+	  setPixel(cursorX, cursorY, 0, 0, 0);
+	  PS2_MainTask();
+	  setPixel(cursorX, cursorY, 30, 30, 30);
+	  showLeds();
+	  HAL_Delay(30);
   }
   /* USER CODE END 3 */
-}
-
-// GAMES: -------------------------------------------------------------------------
-
-void playPong(){
-	// PONG - rewritten for the game
-	// by Ishan Kumar: 11/7/2025
-
-	int ballX = 1;
-	int ballY = 4;
-
-	/*
-	STATE MACHINE FOR BALL DIRECTION
-	> UP:
-	0 = left fast
-	1 = left
-	2 = right
-	3 = right fast
-	> DOWN
-	4 = left fast
-	5 = left
-	6 = right
-	7 = right fast
-	*/
-	int ballStateMachine = 3;
-
-	// we don't want to move the ball every frame. The prescaler will move the ball every n frames
-	int ballPrescaler = 2;
-	int ballCurrN = 0;
-
-	int lose = 0;
-
-	while (!lose){
-		// read pot
-		uint32_t ADC_VAL = 0;
-		HAL_ADC_Start(&hadc1);//start conversion
-		HAL_ADC_PollForConversion(&hadc1, 0xFFFFFFFF);//wait for conversion to finish
-		ADC_VAL = HAL_ADC_GetValue(&hadc1);//retrieve value
-
-		// turn value into x value from 0 to 12
-		int pot = ADC_VAL / 16; // standardize
-		pot = (pot / 8) - 6; // put it on the range from 0 to 12
-		if (pot < 0) pot = 0;
-		if (pot > 12) pot = 12;
-		pot = 12 - pot; // guess i had the direction reversed oops
-
-		// start drawing screen
-		clearScreen();
-
-		// draw paddle
-		for (int i = pot; i < pot + 4; i++){
-			setPixel(i, 1, 0, 50, 50);
-		}
-
-		// decide whether to move the ball
-		if (ballCurrN < ballPrescaler){
-			ballCurrN++;
-			setPixel(ballX, ballY, 0, 50, 0);
-		} else {
-			ballCurrN = 0;
-
-			// getting rid of edge cases
-			if (ballX == 1){
-				if (ballStateMachine == 0){
-					ballStateMachine = 1;
-				}
-				if (ballStateMachine == 4){
-					ballStateMachine = 5;
-				}
-			} else if (ballX == 14){
-				if (ballStateMachine == 7){
-					ballStateMachine = 6;
-				}
-				if (ballStateMachine == 3){
-					ballStateMachine = 2;
-				}
-			}
-
-			// left side bounce
-			if (ballX == 0){
-				if (ballStateMachine == 0) ballStateMachine = 3;
-				if (ballStateMachine == 1) ballStateMachine = 2;
-				if (ballStateMachine == 4) ballStateMachine = 7;
-				if (ballStateMachine == 5) ballStateMachine = 6;
-			}
-			// right side bounce
-			if (ballX == 15){
-				if (ballStateMachine == 2) ballStateMachine = 1;
-				if (ballStateMachine == 3) ballStateMachine = 0;
-				if (ballStateMachine == 6) ballStateMachine = 5;
-				if (ballStateMachine == 7) ballStateMachine = 4;
-			}
-			// top bounce
-			if (ballY == 15){
-				ballStateMachine += 4;
-			}
-			// bottom bounce
-			if (ballY == 2){
-				if (ballX == pot){
-					ballStateMachine = 0;
-				} else if (ballX == pot + 1){
-					ballStateMachine = 1;
-				} else if (ballX == pot + 2){
-					ballStateMachine = 2;
-				} else if (ballX == pot + 3){
-					ballStateMachine = 3;
-				} else {
-					lose = 1; // ggs
-				}
-			}
-
-			// animate ball
-			if (ballStateMachine == 0){
-				ballX -= 2;
-				ballY += 1;
-			} else if (ballStateMachine == 1){
-				ballX -= 1;
-				ballY += 1;
-			} else if (ballStateMachine == 2){
-				ballX += 1;
-				ballY += 1;
-			} else if (ballStateMachine == 3){
-				ballX += 2;
-				ballY += 1;
-			} else if (ballStateMachine == 4){
-				ballX -= 2;
-				ballY -= 1;
-			} else if (ballStateMachine == 5){
-				ballX -= 1;
-				ballY -= 1;
-			} else if (ballStateMachine == 6){
-				ballX += 1;
-				ballY -= 1;
-			} else if (ballStateMachine == 7){
-				ballX += 2;
-				ballY -= 1;
-			}
-			setPixel(ballX, ballY, 0, 50, 0);
-		}
-		showLeds();
-		HAL_Delay(30);
-	}
-
-	// lose animation
-	for (int j = 16; j >= 0; j--){
-		for (int i = 0; i < 16; i++){
-			setPixel(i, j, 50, 0, 0);
-		}
-		showLeds();
-		HAL_Delay(50);
-	}
 }
 
 
@@ -545,7 +521,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
   RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 40;
+  RCC_OscInitStruct.PLL.PLLN = 20;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -563,67 +539,49 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
 }
 
 /**
-  * @brief ADC1 Initialization Function
+  * @brief SPI1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_ADC1_Init(void)
+static void MX_SPI1_Init(void)
 {
 
-  /* USER CODE BEGIN ADC1_Init 0 */
+  /* USER CODE BEGIN SPI1_Init 0 */
 
-  /* USER CODE END ADC1_Init 0 */
+  /* USER CODE END SPI1_Init 0 */
 
-  ADC_ChannelConfTypeDef sConfig = {0};
+  /* USER CODE BEGIN SPI1_Init 1 */
 
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
-
-  /** Common config
-  */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV32;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  hadc1.Init.LowPowerAutoWait = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-  hadc1.Init.OversamplingMode = DISABLE;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_LSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 7;
+  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
     Error_Handler();
   }
+  /* USER CODE BEGIN SPI1_Init 2 */
 
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_640CYCLES_5;
-  sConfig.SingleDiff = ADC_SINGLE_ENDED;
-  sConfig.OffsetNumber = ADC_OFFSET_NONE;
-  sConfig.Offset = 0;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ADC1_Init 2 */
-
-  /* USER CODE END ADC1_Init 2 */
+  /* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -649,7 +607,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 99;
+  htim2.Init.Period = 49;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -726,6 +684,9 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOG_CLK_ENABLE();
   HAL_PWREx_EnableVddIO2();
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(PS2_CS_GPIO_Port, PS2_CS_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : PE2 PE3 */
   GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -750,12 +711,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF13_SAI1;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA4 PA5 PA6 PA7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  /*Configure GPIO pins : PC0 PC1 PC2 PC3
+                           PC4 PC5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
+                          |GPIO_PIN_4|GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA1 PA3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB0 */
@@ -766,8 +733,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF2_TIM3;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB2 PB6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_6;
+  /*Configure GPIO pin : PB1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG_ADC_CONTROL;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -901,6 +874,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PS2_CS_Pin */
+  GPIO_InitStruct.Pin = PS2_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(PS2_CS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB8 PB9 */
   GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
