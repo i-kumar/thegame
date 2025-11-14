@@ -27,6 +27,14 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+// stores data for one led
+typedef struct ledData{
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+};
+
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -45,7 +53,7 @@
 #define PS2_R1          0x0800
 #define PS2_TRIANGLE    0x1000
 #define PS2_CIRCLE      0x2000
-#define PS2_CROSS       0x4000
+#define PS2_X       0x4000
 #define PS2_SQUARE      0x8000
 
 // CS control macros
@@ -69,6 +77,14 @@ DMA_HandleTypeDef hdma_tim2_ch1;
 // PS2 Controller variables
 int32_t current_value = 50;
 uint16_t prev_buttons = 0xFFFF;
+
+// storage for whole screen
+#define NUM_LEDS 16*16
+struct ledData storage[NUM_LEDS];
+
+// buffer storage
+#define RESET_PULSES 60 // need this because stm has done nothing but ruin my life and im tired of it
+uint32_t pwmBuffer[RESET_PULSES + (NUM_LEDS * 24)]; // 24 bits per led (plus our 60 0s at the start)
 
 /* USER CODE END PV */
 
@@ -94,6 +110,20 @@ void PS2_MainTask(void);
 
 int cursorX = 0;
 int cursorY = 0;
+
+int on = 0;
+void onXPress(){
+	if (on){
+		on = 0;
+		for (int i = 0; i < 16*16; i++){
+			  storage[i] = (struct ledData){0, 0, 0};
+		}
+	} else {
+		on = 1;
+		show373();
+	}
+}
+
 
 uint8_t PS2_TransferByte(uint8_t data) {
     uint8_t rx_data;
@@ -131,10 +161,6 @@ void PS2_Init(void) {
     PS2_CS_HIGH();
     HAL_Delay(500);  // Let controller fully stabilize
 
-    printf("\r\n========================================\r\n");
-    printf("PS2 Controller Initialized\r\n");
-    printf("========================================\r\n");
-
     // Flush initial garbage reads - READ BUT IGNORE
     uint16_t dummy;
     for (int i = 0; i < 10; i++) {
@@ -144,8 +170,6 @@ void PS2_Init(void) {
 
     // Reset button state after flushing
     prev_buttons = 0xFFFF;  // All buttons released
-
-    printf("Ready! Starting value: %ld\r\n\r\n", current_value);
 }
 
 
@@ -161,23 +185,39 @@ void PS2_ProcessButtons(uint16_t buttons) {
     }
 
     if (pressed & PS2_UP) {
-        cursorY++;
-        printf("UP pressed:    %ld\r\n", current_value);
+    	if (cursorY == 15){
+    		cursorY = 0;
+    	} else {
+    		cursorY++;
+    	}
     }
 
     if (pressed & PS2_DOWN) {
-        cursorY--;
-        printf("DOWN pressed:  %ld\r\n", current_value);
+    	if (cursorY == 0){
+    		cursorY = 15;
+    	} else {
+    		cursorY--;
+    	}
     }
 
     if (pressed & PS2_LEFT) {
-        cursorX--;
-        printf("LEFT pressed:  %ld\r\n", current_value);
+    	if (cursorX == 0){
+    		cursorX = 15;
+    	} else {
+    		cursorX--;
+    	}
     }
 
     if (pressed & PS2_RIGHT) {
-        cursorX++;
-        printf("RIGHT pressed: %ld\r\n", current_value);
+    	if (cursorX == 15){
+    		cursorX = 0;
+    	} else {
+    		cursorX++;
+    	}
+    }
+
+    if (pressed & PS2_X) {
+    	onXPress();
     }
 }
 
@@ -194,21 +234,6 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim){
 	HAL_TIM_PWM_Stop_DMA(&htim2, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
 }
-
-// stores data for one led
-typedef struct ledData{
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-};
-
-// storage for whole screen
-#define NUM_LEDS 16*16
-struct ledData storage[NUM_LEDS];
-
-// buffer storage
-#define RESET_PULSES 60 // need this because stm has done nothing but ruin my life and im tired of it
-uint32_t pwmBuffer[RESET_PULSES + (NUM_LEDS * 24)]; // 24 bits per led (plus our 60 0s at the start)
 
 // write all leds to buffer
 void writeLedsToBuffer(){
@@ -331,7 +356,7 @@ int main(void)
 	  PS2_MainTask();
 	  setPixel(cursorX, cursorY, 30, 30, 30);
 	  showLeds();
-	  HAL_Delay(30);
+	  HAL_Delay(5);
   }
   /* USER CODE END 3 */
 }
