@@ -60,8 +60,8 @@ all: main-build
 main-build: attempt3.elf secondary-outputs
 
 # Tool invocations
-attempt3.elf attempt3.map: $(OBJS) $(USER_OBJS) N:\EECS373-CubeIDE-Workspace\attempt3\STM32L4R5ZITXP_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "attempt3.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"N:\EECS373-CubeIDE-Workspace\attempt3\STM32L4R5ZITXP_FLASH.ld" --specs=nosys.specs -Wl,-Map="attempt3.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+attempt3.elf attempt3.map: $(OBJS) $(USER_OBJS) C:\Users\ishaniik\Downloads\attempt3\STM32L4R5ZITXP_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "attempt3.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\ishaniik\Downloads\attempt3\STM32L4R5ZITXP_FLASH.ld" --specs=nosys.specs -Wl,-Map="attempt3.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

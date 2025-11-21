@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <math.h>
 
 /* USER CODE END Includes */
 
@@ -59,6 +60,23 @@ typedef struct ledData{
 // CS control macros
 #define PS2_CS_LOW()  HAL_GPIO_WritePin(PS2_CS_GPIO_Port, PS2_CS_Pin, GPIO_PIN_RESET)
 #define PS2_CS_HIGH() HAL_GPIO_WritePin(PS2_CS_GPIO_Port, PS2_CS_Pin, GPIO_PIN_SET)
+
+// for DAC
+#define DMA_BUFFER_SIZE 32
+#define SAMPLE_FREQ 10000
+#define OUTPUT_MID 2048 // half of 12-bit dac possibilities
+
+// Musical Note Frequencies (Hz)
+#define NOTE_C4 261
+#define NOTE_D4 293
+#define NOTE_E4 329
+#define NOTE_F4 349
+#define NOTE_G4 392
+#define NOTE_A4 440
+#define NOTE_B4 493
+#define NOTE_C5 523
+#define NOTE_OFF 0
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -67,9 +85,13 @@ typedef struct ledData{
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+DAC_HandleTypeDef hdac1;
+DMA_HandleTypeDef hdma_dac1_ch1;
+
 SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim6;
 DMA_HandleTypeDef hdma_tim2_ch1;
 
 /* USER CODE BEGIN PV */
@@ -85,6 +107,7 @@ struct ledData storage[NUM_LEDS];
 // buffer storage
 #define RESET_PULSES 60 // need this because stm has done nothing but ruin my life and im tired of it
 uint32_t pwmBuffer[RESET_PULSES + (NUM_LEDS * 24)]; // 24 bits per led (plus our 60 0s at the start)
+uint32_t dmaBuffer[2 * DMA_BUFFER_SIZE];
 
 /* USER CODE END PV */
 
@@ -94,6 +117,8 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_DAC1_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 
 // PS2 Controller function prototypes
@@ -107,6 +132,28 @@ void PS2_MainTask(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void setTone(uint32_t freq)
+{
+    if (freq == 0) {
+        // Silence: Stop the timer so the DAC holds the last voltage
+        HAL_TIM_Base_Stop(&htim6);
+    }
+    else {
+        // 1. Calculate new Period (ARR)
+        // Constant 31250 comes from: 1MHz Clock / 32 Samples
+        uint32_t newArr = (31250 / freq) - 1;
+
+        // 2. Update the Timer Period
+        __HAL_TIM_SET_AUTORELOAD(&htim6, newArr);
+
+        // 3. Reset counter to 0 so the new speed applies immediately
+        __HAL_TIM_SET_COUNTER(&htim6, 0);
+
+        // 4. Ensure timer is running
+        HAL_TIM_Base_Start(&htim6);
+    }
+}
 
 int cursorX = 0;
 int cursorY = 0;
@@ -185,40 +232,40 @@ void PS2_ProcessButtons(uint16_t buttons) {
     }
 
     if (pressed & PS2_UP) {
-    	if (cursorY == 15){
-    		cursorY = 0;
-    	} else {
-    		cursorY++;
-    	}
+        setTone(NOTE_E4); // Play D
     }
 
     if (pressed & PS2_DOWN) {
-    	if (cursorY == 0){
-    		cursorY = 15;
-    	} else {
-    		cursorY--;
-    	}
+        setTone(NOTE_C4); // Play C
     }
 
     if (pressed & PS2_LEFT) {
-    	if (cursorX == 0){
-    		cursorX = 15;
-    	} else {
-    		cursorX--;
-    	}
+        setTone(NOTE_D4); // Play C
     }
 
     if (pressed & PS2_RIGHT) {
-    	if (cursorX == 15){
-    		cursorX = 0;
-    	} else {
-    		cursorX++;
-    	}
+        setTone(NOTE_F4); // Play E
     }
 
     if (pressed & PS2_X) {
     	onXPress();
+        setTone(NOTE_C5); // Play F (Overrides your previous X logic if you want)
     }
+    if (pressed & PS2_SQUARE) {
+            setTone(NOTE_G4); // Play C
+        }
+        else if (pressed & PS2_TRIANGLE) {
+            setTone(NOTE_A4); // Play D
+        }
+        else if (pressed & PS2_CIRCLE) {
+            setTone(NOTE_B4); // Play E
+        }
+        else if (pressed & PS2_L1) {
+             setTone(NOTE_OFF);
+        }
+        else if (pressed & PS2_SELECT) {
+            setTone(NOTE_OFF); // Silence button
+        }
 }
 
 
@@ -334,7 +381,31 @@ int main(void)
   MX_DMA_Init();
   MX_TIM2_Init();
   MX_SPI1_Init();
+  MX_DAC1_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
+
+  // --- 1. Generate Sine Wave Data ---
+    // We fill the buffer with values representing a sine wave.
+    // 12-bit DAC = values between 0 and 4095.
+    // We use 3.14159 * 2 for a full circle (radians).
+
+    for (int i = 0; i < 2 * DMA_BUFFER_SIZE; i++)
+    {
+        // Calculate angle:
+        // We want one full sine wave cycle every 32 samples (DMA_BUFFER_SIZE)
+        double angle = (2.0 * 3.14159 * i) / (double)DMA_BUFFER_SIZE;
+
+        // Calculate value: Center (2048) + Amplitude (1900) * sin(angle)
+        // We use 1900 amplitude to stay safely within 0-4095 range
+        dmaBuffer[i] = (uint32_t)(OUTPUT_MID + (1900 * sin(angle)));
+    }
+
+    // --- 2. Start the Timer ---
+    HAL_TIM_Base_Start(&htim6);
+
+    // --- 3. Start DAC with DMA ---
+    HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)dmaBuffer, 2 * DMA_BUFFER_SIZE, DAC_ALIGN_12B_R);
 
 
   //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
@@ -343,20 +414,15 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //int currLimit = 0;
-  //int currentColor = 0; //0 = red, 1 = green, 2 = blue
-
+    show373();
+    showLeds();
 
   while (1)
   {
     /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-	  setPixel(cursorX, cursorY, 0, 0, 0);
 	  PS2_MainTask();
-	  setPixel(cursorX, cursorY, 30, 30, 30);
-	  showLeds();
 	  HAL_Delay(5);
+    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
@@ -520,6 +586,7 @@ void showLogo(){
 
 }
 
+
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -568,6 +635,50 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief DAC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_DAC1_Init(void)
+{
+
+  /* USER CODE BEGIN DAC1_Init 0 */
+
+  /* USER CODE END DAC1_Init 0 */
+
+  DAC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN DAC1_Init 1 */
+
+  /* USER CODE END DAC1_Init 1 */
+
+  /** DAC Initialization
+  */
+  hdac1.Instance = DAC1;
+  if (HAL_DAC_Init(&hdac1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** DAC channel OUT1 config
+  */
+  sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
+  sConfig.DAC_HighFrequency = DAC_HIGH_FREQUENCY_INTERFACE_MODE_DISABLE;
+  sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+  sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_DISABLE;
+  sConfig.DAC_UserTrimming = DAC_TRIMMING_FACTORY;
+  if (HAL_DAC_ConfigChannel(&hdac1, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN DAC1_Init 2 */
+
+  /* USER CODE END DAC1_Init 2 */
+
 }
 
 /**
@@ -670,6 +781,44 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 39;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 99;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -683,6 +832,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
 }
 
