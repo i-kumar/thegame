@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <math.h>
+#include <stdlib.h>   // for random
 
 /* USER CODE END Includes */
 
@@ -96,6 +97,44 @@ DMA_HandleTypeDef hdma_tim2_ch1;
 
 /* USER CODE BEGIN PV */
 
+//minesweeper variables
+#define GRID_W 16
+#define GRID_H 16
+
+typedef enum {
+    TILE_EMPTY = 0,
+    TILE_1,
+    TILE_2,
+    TILE_3,
+    TILE_BOMB
+} TileContent;
+
+typedef enum {
+    STATE_HIDDEN = 0,
+    STATE_REVEALED,
+    STATE_FLAGGED
+} TileState;
+
+TileContent board[GRID_H][GRID_W];
+TileState  tileState[GRID_H][GRID_W];
+
+int gameOver = 0;
+int gameWon = 0;
+int winPulseTimer = 0;
+int testMode = 0;
+
+//this is gonna break bruh
+int animRevealStep[GRID_H][GRID_W];
+int floodAnimating = 0;
+int floodAnimFrame = 0;
+int floodAnimTimer = 0;
+int floodMaxStep = 0;
+
+int cursorX = 0;
+int cursorY = 0;
+
+
+
 // PS2 Controller variables
 int32_t current_value = 50;
 uint16_t prev_buttons = 0xFFFF;
@@ -108,6 +147,9 @@ struct ledData storage[NUM_LEDS];
 #define RESET_PULSES 60 // need this because stm has done nothing but ruin my life and im tired of it
 uint32_t pwmBuffer[RESET_PULSES + (NUM_LEDS * 24)]; // 24 bits per led (plus our 60 0s at the start)
 uint32_t dmaBuffer[2 * DMA_BUFFER_SIZE];
+
+//brightness variable
+uint8_t brightness = 40;
 
 /* USER CODE END PV */
 
@@ -127,6 +169,17 @@ uint8_t PS2_ReadController(uint16_t *buttons);
 void PS2_Init(void);
 void PS2_ProcessButtons(uint16_t buttons);
 void PS2_MainTask(void);
+
+
+//minesweeper functions
+void Minesweeper_Render(void);
+void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b);
+void revealTileAtCursor(void);
+void toggleFlagAtCursor(void);
+void onXPress(void);
+void floodReveal(int startX, int startY);
+void checkWin(void);
+//16 x 16 grid for now
 
 /* USER CODE END PFP */
 
@@ -155,20 +208,333 @@ void setTone(uint32_t freq)
     }
 }
 
-int cursorX = 0;
-int cursorY = 0;
 
-int on = 0;
-void onXPress(){
-	if (on){
-		on = 0;
-		for (int i = 0; i < 16*16; i++){
-			  storage[i] = (struct ledData){0, 0, 0};
-		}
-	} else {
-		on = 1;
-		show373();
-	}
+void Minesweeper_InitBoard(void) {
+    // 0) Reset state
+    gameOver = 0;
+    gameWon  = 0;
+    winPulseTimer = 0;
+
+    //animation stuff
+    floodAnimating = 0;
+    floodAnimFrame = 0;
+    floodAnimTimer = 0;
+    floodMaxStep   = 0;
+
+    // clear state
+    for (int y = 0; y < GRID_H; y++) {
+        for (int x = 0; x < GRID_W; x++) {
+            board[y][x] = TILE_EMPTY;
+            tileState[y][x] = STATE_HIDDEN;
+        }
+    }
+
+    // bombs
+    if (testMode) {
+        //one bomb in middle test mode
+        int cx = GRID_W / 2;   // for 16 to 8
+        int cy = GRID_H / 2;   // for 16 to 8
+        if (cx >= GRID_W) cx = GRID_W - 1;
+        if (cy >= GRID_H) cy = GRID_H - 1;
+        board[cy][cx] = TILE_BOMB;
+    } else {
+       //normal
+        srand(HAL_GetTick());
+
+        int numBombs = 40;      // adjutsable
+        int placed = 0;
+
+        while (placed < numBombs) {
+            int rx = rand() % GRID_W;
+            int ry = rand() % GRID_H;
+
+            if (board[ry][rx] != TILE_BOMB) {
+                board[ry][rx] = TILE_BOMB;
+                placed++;
+            }
+        }
+    }
+
+    // adjacency computing
+    for (int y = 0; y < GRID_H; y++) {
+        for (int x = 0; x < GRID_W; x++) {
+
+            if (board[y][x] == TILE_BOMB)
+                continue;
+
+            int neighbors = 0;
+
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    if (dx == 0 && dy == 0) continue;
+                    int nx = x + dx;
+                    int ny = y + dy;
+                    if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H)
+                        continue;
+
+                    if (board[ny][nx] == TILE_BOMB)
+                        neighbors++;
+                }
+            }
+
+            // can add more with diffculty scaling, net steps
+            switch (neighbors) {
+                case 0: board[y][x] = TILE_EMPTY; break;
+                case 1: board[y][x] = TILE_1;     break;
+                case 2: board[y][x] = TILE_2;     break;
+                default: board[y][x] = TILE_3;    break;
+            }
+        }
+    }
+}
+
+
+
+
+//inprogress // see if i can make it a ripple
+
+void checkWin(void){
+	if(gameOver) return;
+    for (int y = 0; y < GRID_H; y++) {
+        for (int x = 0; x < GRID_W; x++) {
+            if (board[y][x] != TILE_BOMB &&
+                tileState[y][x] != STATE_REVEALED) {
+
+                return;
+            }
+        }
+    }
+
+    //status check
+    gameOver = 1;
+    gameWon  = 1;
+}
+
+
+
+//not fulyl working yet
+void floodReveal(int startX, int startY) {
+    // clear animation
+    for (int y = 0; y < GRID_H; y++) {
+        for (int x = 0; x < GRID_W; x++) {
+            animRevealStep[y][x] = -1;
+        }
+    }
+
+    int qx[GRID_W * GRID_H];
+    int qy[GRID_W * GRID_H];
+    int qd[GRID_W * GRID_H];
+    int head = 0;
+    int tail = 0;
+
+    qx[tail] = startX;
+    qy[tail] = startY;
+    qd[tail] = 0;
+    tail++;
+
+    floodMaxStep = 0;
+
+    while (head < tail) {
+        int x = qx[head];
+        int y = qy[head];
+        int d = qd[head];
+        head++;
+
+        // bounds
+        if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H)
+            continue;
+
+        // skip bombs
+        if (board[y][x] == TILE_BOMB)
+            continue;
+
+        // skip flagged
+        if (tileState[y][x] == STATE_FLAGGED ||
+            tileState[y][x] == STATE_REVEALED)
+            continue;
+
+        // logical reveal
+        tileState[y][x] = STATE_REVEALED;
+
+        // rstore
+        animRevealStep[y][x] = d;
+        if (d > floodMaxStep) {
+            floodMaxStep = d;
+        }
+
+        // problem here i think
+        if (board[y][x] == TILE_EMPTY) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    if (dx == 0 && dy == 0) continue;
+                    int nx = x + dx;
+                    int ny = y + dy;
+                    if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H)
+                        continue;
+
+                    if (board[ny][nx] == TILE_BOMB)
+                        continue;
+
+                    if (tileState[ny][nx] == STATE_HIDDEN) {
+                        if (tail < GRID_W * GRID_H) {
+                            qx[tail] = nx;
+                            qy[tail] = ny;
+                            qd[tail] = d + 1;
+                            tail++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // enable
+    floodAnimating = 1;
+    floodAnimFrame = 0;
+    floodAnimTimer = 0;
+}
+
+
+static inline uint8_t scaleColor(uint8_t c) {
+    return (c * brightness) / 255;
+}
+
+static void colorForNumber(TileContent t, uint8_t *r, uint8_t *g, uint8_t *b) {
+    switch (t) {
+        case TILE_1: *r = 0;   *g = 0;   *b = 180; break; // blue
+        case TILE_2: *r = 0;   *g = 180; *b = 0;   break; // green
+        //case TILE_3: *r = 255; *g = 120;   *b = 0;   break; // orange
+        case TILE_3: *r = 220; *g = 0;   *b = 140;   break; // pink
+        default:      *r = 0;   *g = 0;   *b = 0;   break;
+    }
+}
+
+
+void Minesweeper_Render(void) {
+    for (int y = 0; y < GRID_H; y++) {
+        for (int x = 0; x < GRID_W; x++) {
+
+            uint8_t r = 0, g = 0, b = 0;
+
+            if (gameOver && !gameWon && board[y][x] == TILE_BOMB) {
+            	//shows bombs
+                        r = 200; g = 0; b = 0;
+            } else {
+                switch (tileState[y][x]) {
+                    case STATE_HIDDEN:
+                        // grey for hidden
+                        r = g = b = 0;
+                        break;
+
+                    case STATE_FLAGGED:
+                        // flagged = yello
+                        r = 200; g = 200; b = 0;
+                        break;
+
+                    case STATE_REVEALED:
+                       //goes with ripple
+                        if (floodAnimating &&
+                            animRevealStep[y][x] >= 0 &&
+                            animRevealStep[y][x] > floodAnimFrame
+                           )
+                        {
+
+                            r = g = b = 0; //hidden
+                        }
+                        else
+                        {
+
+                            if (board[y][x] == TILE_BOMB) {
+                                r = 200; g = 0; b = 0;
+                            } else if (board[y][x] == TILE_EMPTY) {
+                                r = g = b = 40;
+                            } else {
+                                colorForNumber(board[y][x], &r, &g, &b);
+                            }
+                        }
+                        break;
+                }
+            }
+
+
+            //new game won function, pulsing green
+            if (gameWon) {
+
+                int pulse = winPulseTimer % 100;
+                int bright = (pulse < 50) ? pulse : (100 - pulse);
+
+                uint8_t gv = bright * 4;
+
+                r = 0;
+                g = gv;
+                b = 0;
+            }
+
+            // Cursor highlight overlay
+            if (!gameWon && x == cursorX && y == cursorY) {
+//                if (r < 40) r = 40;
+//                if (g < 40) g = 40;
+//                if (b < 40) b = 40;
+
+            	//above is for whie
+            	r =255;
+				g = 0;
+				b = 0;
+
+            }
+
+            setPixel(x, y,
+                     scaleColor(r),
+                     scaleColor(g),
+                     scaleColor(b));
+        }
+    }
+}
+
+void revealTileAtCursor(void) {
+    if (gameOver) return;
+
+    int x = cursorX;
+    int y = cursorY;
+
+    // don't reveal already revealed or flagged
+    if (tileState[y][x] == STATE_REVEALED ||
+        tileState[y][x] == STATE_FLAGGED) {
+        return;
+    }
+
+    // bomb end game
+    if (board[y][x] == TILE_BOMB) {
+        tileState[y][x] = STATE_REVEALED;
+        gameOver = 1;
+        return;
+    }
+
+
+    if (board[y][x] == TILE_EMPTY) {
+        floodReveal(x, y);
+        checkWin();
+        return;
+    }
+
+    tileState[y][x] = STATE_REVEALED;
+    checkWin();
+}
+
+
+void toggleFlagAtCursor(void) {
+    if (gameOver) return;
+
+    TileState *s = &tileState[cursorY][cursorX];
+    if (*s == STATE_HIDDEN) {
+        *s = STATE_FLAGGED;
+    } else if (*s == STATE_FLAGGED) {
+        *s = STATE_HIDDEN;
+    }
+}
+
+void onXPress() {
+    revealTileAtCursor();
 }
 
 
@@ -232,40 +598,62 @@ void PS2_ProcessButtons(uint16_t buttons) {
     }
 
     if (pressed & PS2_UP) {
-        setTone(NOTE_E4); // Play D
+    	if (cursorY == 15){
+    		cursorY = 0;
+    	} else {
+    		cursorY++;
+    	}
     }
 
     if (pressed & PS2_DOWN) {
-        setTone(NOTE_C4); // Play C
+    	if (cursorY == 0){
+    		cursorY = 15;
+    	} else {
+    		cursorY--;
+    	}
     }
 
     if (pressed & PS2_LEFT) {
-        setTone(NOTE_D4); // Play C
+    	if (cursorX == 0){
+    		cursorX = 15;
+    	} else {
+    		cursorX--;
+    	}
     }
 
     if (pressed & PS2_RIGHT) {
-        setTone(NOTE_F4); // Play E
+    	if (cursorX == 15){
+    		cursorX = 0;
+    	} else {
+    		cursorX++;
+    	}
     }
 
     if (pressed & PS2_X) {
     	onXPress();
-        setTone(NOTE_C5); // Play F (Overrides your previous X logic if you want)
+    }
+
+    if (pressed & PS2_CIRCLE) { //minsweeper flag
+        toggleFlagAtCursor();
+    }
+
+    if (pressed & PS2_TRIANGLE) {
+        Minesweeper_InitBoard();
+        cursorX = 0;
+        cursorY = 0;
     }
     if (pressed & PS2_SQUARE) {
-            setTone(NOTE_G4); // Play C
+        // tyoggle test
+        if (testMode == 0) {
+            testMode = 1;  // enter  test mode
+        } else {
+            testMode = 0;  // go back to normal random mode
         }
-        else if (pressed & PS2_TRIANGLE) {
-            setTone(NOTE_A4); // Play D
-        }
-        else if (pressed & PS2_CIRCLE) {
-            setTone(NOTE_B4); // Play E
-        }
-        else if (pressed & PS2_L1) {
-             setTone(NOTE_OFF);
-        }
-        else if (pressed & PS2_SELECT) {
-            setTone(NOTE_OFF); // Silence button
-        }
+
+        Minesweeper_InitBoard();  // rebuild board using new mode
+        cursorX = 0;
+        cursorY = 0;
+    }
 }
 
 
@@ -410,18 +798,39 @@ int main(void)
 
   //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
   //HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+    PS2_Init();
+    Minesweeper_InitBoard();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-    show373();
-    showLeds();
 
   while (1)
   {
     /* USER CODE END WHILE */
-	  PS2_MainTask();
-	  HAL_Delay(5);
+	PS2_MainTask();        // read controller, update cursor + buttons
+    Minesweeper_Render();  // draw entire board + cursor into storage[]
+    showLeds();            // send storage[] out via DMAf
+
+
+    if (gameWon) {
+        winPulseTimer++;
+    }
+    //anjimattion
+    if (floodAnimating) {
+        floodAnimTimer++;
+                 if (floodAnimTimer >= 3) {
+            floodAnimTimer = 0;
+            floodAnimFrame++;
+
+            if (floodAnimFrame > floodMaxStep) {
+                floodAnimating = 0;
+            }
+        }
+    }
+    HAL_Delay(5);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
