@@ -27,25 +27,25 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000030  00000000  00000000  0000a86c  2**0
                   CONTENTS, READONLY
- 12 .debug_info   000104c7  00000000  00000000  0000a89c  2**0
+ 12 .debug_info   000104a5  00000000  00000000  0000a89c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 000024db  00000000  00000000  0001ad63  2**0
+ 13 .debug_abbrev 000024c2  00000000  00000000  0001ad41  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 000010e0  00000000  00000000  0001d240  2**3
+ 14 .debug_aranges 000010d0  00000000  00000000  0001d208  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_rnglists 00000d1a  00000000  00000000  0001e320  2**0
+ 15 .debug_rnglists 00000d0c  00000000  00000000  0001e2d8  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  0002b48c  00000000  00000000  0001f03a  2**0
+ 16 .debug_macro  0002b48c  00000000  00000000  0001efe4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00011e0e  00000000  00000000  0004a4c6  2**0
+ 17 .debug_line   00011d52  00000000  00000000  0004a470  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    0010821e  00000000  00000000  0005c2d4  2**0
+ 18 .debug_str    0010820d  00000000  00000000  0005c1c2  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  001644f2  2**0
+ 19 .comment      00000043  00000000  00000000  001643cf  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  000051a4  00000000  00000000  00164538  2**2
+ 20 .debug_frame  00005158  00000000  00000000  00164414  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 0000005f  00000000  00000000  001696dc  2**0
+ 21 .debug_line_str 0000005f  00000000  00000000  0016956c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -514,7 +514,7 @@ void PlayNote(int voiceIndex, float freq) {
  8000542:	bf00      	nop
  8000544:	20048878 	.word	0x20048878
  8000548:	45000000 	.word	0x45000000
- 800054c:	461c4000 	.word	0x461c4000
+ 800054c:	469c4000 	.word	0x469c4000
 
 08000550 <Minesweeper_InitBoard>:
 
@@ -3501,9 +3501,9 @@ static void MX_TIM6_Init(void)
  80018b0:	4b14      	ldr	r3, [pc, #80]	@ (8001904 <MX_TIM6_Init+0x64>)
  80018b2:	4a15      	ldr	r2, [pc, #84]	@ (8001908 <MX_TIM6_Init+0x68>)
  80018b4:	601a      	str	r2, [r3, #0]
-  htim6.Init.Prescaler = 39;
+  htim6.Init.Prescaler = 19;
  80018b6:	4b13      	ldr	r3, [pc, #76]	@ (8001904 <MX_TIM6_Init+0x64>)
- 80018b8:	2227      	movs	r2, #39	@ 0x27
+ 80018b8:	2213      	movs	r2, #19
  80018ba:	605a      	str	r2, [r3, #4]
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
  80018bc:	4b11      	ldr	r3, [pc, #68]	@ (8001904 <MX_TIM6_Init+0x64>)

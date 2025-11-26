@@ -63,7 +63,7 @@ typedef struct ledData{
 #define PS2_CS_HIGH() HAL_GPIO_WritePin(PS2_CS_GPIO_Port, PS2_CS_Pin, GPIO_PIN_SET)
 
 // Audio Settings
-#define SAMPLE_RATE 10000   // Timer 6 will run at this fixed frequency
+#define SAMPLE_RATE 20000   // Timer 6 will run at this fixed frequency
 #define BUFFER_SIZE 256     // Size of the DMA buffer (processed in two halves of 128)
 #define SINE_RES 2048       // Resolution of our sine wave table (larger = smoother)
 
@@ -131,6 +131,8 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim6;
 DMA_HandleTypeDef hdma_tim2_ch1;
 
+/* USER CODE BEGIN PV */
+
 //                   _         _   _
 //                  (_)       | | | |
 //   _ __ ___   __ _ _ _ __   | |_| |__   ___ _ __ ___   ___
@@ -144,7 +146,6 @@ int melody[128]        = {B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5
 int counterMelody[128] = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, G6, G6, G6, G6, F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,D6S,D6S,D6S,D6S,E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, D6S,D6S,D6S,D6S,00, 00, 00, 00, 00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,00, D3S};
 int chordSupport[128]  = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S,00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S};
 
-/* USER CODE BEGIN PV */
 
 //minesweeper variables
 #define GRID_W 16
@@ -987,170 +988,11 @@ int main(void)
     HAL_Delay(5);
 
     /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
-
-
-// FULL SCREEN IMAGES: ------------------------------------------------------------
-
-// shows "eecs 373" on the led display
-void show373(){
-	  storage[224] = (struct ledData){0, 0, 100};
-	  storage[225] = (struct ledData){0, 0, 100};
-	  storage[226] = (struct ledData){0, 0, 100};
-	  storage[228] = (struct ledData){0, 0, 100};
-	  storage[229] = (struct ledData){0, 0, 100};
-	  storage[230] = (struct ledData){0, 0, 100};
-	  storage[232] = (struct ledData){0, 0, 100};
-	  storage[233] = (struct ledData){0, 0, 100};
-	  storage[234] = (struct ledData){0, 0, 100};
-	  storage[236] = (struct ledData){0, 0, 100};
-	  storage[237] = (struct ledData){0, 0, 100};
-	  storage[238] = (struct ledData){0, 0, 100};
-	  storage[223] = (struct ledData){0, 0, 100};
-	  storage[219] = (struct ledData){0, 0, 100};
-	  storage[215] = (struct ledData){0, 0, 100};
-	  storage[211] = (struct ledData){0, 0, 100};
-	  storage[192] = (struct ledData){0, 0, 100};
-	  storage[193] = (struct ledData){0, 0, 100};
-	  storage[194] = (struct ledData){0, 0, 100};
-	  storage[196] = (struct ledData){0, 0, 100};
-	  storage[197] = (struct ledData){0, 0, 100};
-	  storage[198] = (struct ledData){0, 0, 100};
-	  storage[200] = (struct ledData){0, 0, 100};
-	  storage[204] = (struct ledData){0, 0, 100};
-	  storage[205] = (struct ledData){0, 0, 100};
-	  storage[206] = (struct ledData){0, 0, 100};
-	  storage[191] = (struct ledData){0, 0, 100};
-	  storage[187] = (struct ledData){0, 0, 100};
-	  storage[183] = (struct ledData){0, 0, 100};
-	  storage[177] = (struct ledData){0, 0, 100};
-	  storage[160] = (struct ledData){0, 0, 100};
-	  storage[161] = (struct ledData){0, 0, 100};
-	  storage[162] = (struct ledData){0, 0, 100};
-	  storage[164] = (struct ledData){0, 0, 100};
-	  storage[165] = (struct ledData){0, 0, 100};
-	  storage[166] = (struct ledData){0, 0, 100};
-	  storage[168] = (struct ledData){0, 0, 100};
-	  storage[169] = (struct ledData){0, 0, 100};
-	  storage[170] = (struct ledData){0, 0, 100};
-	  storage[172] = (struct ledData){0, 0, 100};
-	  storage[173] = (struct ledData){0, 0, 100};
-	  storage[174] = (struct ledData){0, 0, 100};
-	  storage[129] = (struct ledData){100, 0, 0};
-	  storage[130] = (struct ledData){100, 0, 0};
-	  storage[131] = (struct ledData){100, 0, 0};
-	  storage[134] = (struct ledData){100, 0, 0};
-	  storage[135] = (struct ledData){100, 0, 0};
-	  storage[136] = (struct ledData){100, 0, 0};
-	  storage[137] = (struct ledData){100, 0, 0};
-	  storage[140] = (struct ledData){100, 0, 0};
-	  storage[141] = (struct ledData){100, 0, 0};
-	  storage[142] = (struct ledData){100, 0, 0};
-	  storage[127] = (struct ledData){100, 0, 0};
-	  storage[123] = (struct ledData){100, 0, 0};
-	  storage[118] = (struct ledData){100, 0, 0};
-	  storage[116] = (struct ledData){100, 0, 0};
-	  storage[112] = (struct ledData){100, 0, 0};
-	  storage[100] = (struct ledData){100, 0, 0};
-	  storage[105] = (struct ledData){100, 0, 0};
-	  storage[111] = (struct ledData){100, 0, 0};
-	  storage[94] = (struct ledData){100, 0, 0};
-	  storage[93] = (struct ledData){100, 0, 0};
-	  storage[92] = (struct ledData){100, 0, 0};
-	  storage[87] = (struct ledData){100, 0, 0};
-	  storage[83] = (struct ledData){100, 0, 0};
-	  storage[82] = (struct ledData){100, 0, 0};
-	  storage[81] = (struct ledData){100, 0, 0};
-	  storage[68] = (struct ledData){100, 0, 0};
-	  storage[72] = (struct ledData){100, 0, 0};
-	  storage[79] = (struct ledData){100, 0, 0};
-	  storage[63] = (struct ledData){100, 0, 0};
-	  storage[59] = (struct ledData){100, 0, 0};
-	  storage[56] = (struct ledData){100, 0, 0};
-	  storage[52] = (struct ledData){100, 0, 0};
-	  storage[48] = (struct ledData){100, 0, 0};
-	  storage[33] = (struct ledData){100, 0, 0};
-	  storage[34] = (struct ledData){100, 0, 0};
-	  storage[35] = (struct ledData){100, 0, 0};
-	  storage[39] = (struct ledData){100, 0, 0};
-	  storage[44] = (struct ledData){100, 0, 0};
-	  storage[45] = (struct ledData){100, 0, 0};
-	  storage[46] = (struct ledData){100, 0, 0};
-}
-
-void showLogo(){
-  // t
-  setPixel(0, 11, 204, 0, 0);
-  setPixel(1, 12, 204, 0, 0);
-  setPixel(1, 11, 204, 0, 0);
-  setPixel(1, 10, 204, 0, 0);
-  setPixel(1, 9, 204, 0, 0);
-  setPixel(2, 11, 204, 0, 0);
-  // h
-  setPixel(4, 12, 204, 0, 0);
-  setPixel(4, 11, 204, 0, 0);
-  setPixel(4, 10, 204, 0, 0);
-  setPixel(4, 9, 204, 0, 0);
-  setPixel(5, 10, 204, 0, 0);
-  setPixel(6, 10, 204, 0, 0);
-  setPixel(6, 9, 204, 0, 0);
-  // e
-  setPixel(8, 11, 204, 0, 0);
-  setPixel(8, 10, 204, 0, 0);
-  setPixel(8, 9, 204, 0, 0);
-  setPixel(9, 11, 204, 0, 0);
-  setPixel(9, 10, 204, 0, 0);
-  setPixel(9, 9, 204, 0, 0);
-  setPixel(10, 11, 204, 0, 0);
-  setPixel(10, 9, 204, 0, 0);
-
-  // g
-  setPixel(0, 7, 234, 24, 24);
-  setPixel(0, 6, 234, 24, 24);
-  setPixel(0, 5, 234, 24, 24);
-  setPixel(0, 3, 234, 24, 24);
-  setPixel(1, 7, 234, 24, 24);
-  setPixel(1, 5, 234, 24, 24);
-  setPixel(1, 3, 234, 24, 24);
-  setPixel(2, 7, 234, 24, 24);
-  setPixel(2, 6, 234, 24, 24);
-  setPixel(2, 5, 234, 24, 24);
-  setPixel(2, 4, 234, 24, 24);
-  setPixel(2, 3, 234, 24, 24);
-  // a
-  setPixel(4, 7, 234, 24, 24);
-  setPixel(4, 6, 234, 24, 24);
-  setPixel(4, 5, 234, 24, 24);
-  setPixel(5, 7, 234, 24, 24);
-  setPixel(5, 5, 234, 24, 24);
-  setPixel(6, 7, 234, 24, 24);
-  setPixel(6, 6, 234, 24, 24);
-  setPixel(6, 5, 234, 24, 24);
-  setPixel(7, 5, 234, 24, 24);
-  // m
-  setPixel(8, 7, 234, 24, 24);
-  setPixel(8, 6, 234, 24, 24);
-  setPixel(8, 5, 234, 24, 24);
-  setPixel(9, 7, 234, 24, 24);
-  setPixel(10, 7, 234, 24, 24);
-  setPixel(10, 6, 234, 24, 24);
-  setPixel(10, 5, 234, 24, 24);
-  setPixel(11, 7, 234, 24, 24);
-  setPixel(12, 7, 234, 24, 24);
-  setPixel(12, 6, 234, 24, 24);
-  setPixel(12, 5, 234, 24, 24);
-  // e
-  setPixel(14, 7, 234, 24, 24);
-  setPixel(14, 6, 234, 24, 24);
-  setPixel(14, 5, 234, 24, 24);
-  setPixel(15, 7, 234, 24, 24);
-  setPixel(15, 5, 234, 24, 24);
-
-}
-
 
 /**
   * @brief System Clock Configuration
@@ -1363,7 +1205,7 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 39;
+  htim6.Init.Prescaler = 19;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim6.Init.Period = 99;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
