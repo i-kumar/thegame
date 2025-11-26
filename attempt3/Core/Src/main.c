@@ -62,10 +62,10 @@ typedef struct ledData{
 #define PS2_CS_LOW()  HAL_GPIO_WritePin(PS2_CS_GPIO_Port, PS2_CS_Pin, GPIO_PIN_RESET)
 #define PS2_CS_HIGH() HAL_GPIO_WritePin(PS2_CS_GPIO_Port, PS2_CS_Pin, GPIO_PIN_SET)
 
-// for DAC
-#define DMA_BUFFER_SIZE 32
-#define SAMPLE_FREQ 10000
-#define OUTPUT_MID 2048 // half of 12-bit dac possibilities
+// Audio Settings
+#define SAMPLE_RATE 10000   // Timer 6 will run at this fixed frequency
+#define BUFFER_SIZE 256     // Size of the DMA buffer (processed in two halves of 128)
+#define SINE_RES 2048       // Resolution of our sine wave table (larger = smoother)
 
 // Musical Note Frequencies (Hz)
 #define NOTE_C4 261
@@ -146,7 +146,24 @@ struct ledData storage[NUM_LEDS];
 // buffer storage
 #define RESET_PULSES 60 // need this because stm has done nothing but ruin my life and im tired of it
 uint32_t pwmBuffer[RESET_PULSES + (NUM_LEDS * 24)]; // 24 bits per led (plus our 60 0s at the start)
-uint32_t dmaBuffer[2 * DMA_BUFFER_SIZE];
+
+// audio stuffs
+uint32_t dmaBuffer[BUFFER_SIZE];
+int16_t sineLUT[SINE_RES];
+
+// Voice Structure (Represents one "Note")
+typedef struct {
+    uint8_t active;
+    float frequency;
+    float phase;       // Current position in the sine wave
+    float phaseStep;   // How much to step forward per sample
+} Voice;
+
+#define MAX_VOICES 4// Polyphony: Let's allow 4 simultaneous notes
+Voice voices[MAX_VOICES];
+
+// Initialization Flag
+uint8_t audioInitialized = 0;
 
 //brightness variable
 uint8_t brightness = 40;
@@ -186,28 +203,90 @@ void checkWin(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void setTone(uint32_t freq)
-{
-    if (freq == 0) {
-        // Silence: Stop the timer so the DAC holds the last voltage
-        HAL_TIM_Base_Stop(&htim6);
+void InitAudio() {
+    // 1. Generate a high-res sine table
+    for(int i = 0; i < SINE_RES; i++) {
+        // Range: -1900 to +1900
+        sineLUT[i] = (int16_t)(1900.0f * sinf(2.0f * 3.14159f * (float)i / (float)SINE_RES));
     }
-    else {
-        // 1. Calculate new Period (ARR)
-        // Constant 31250 comes from: 1MHz Clock / 32 Samples
-        uint32_t newArr = (31250 / freq) - 1;
 
-        // 2. Update the Timer Period
-        __HAL_TIM_SET_AUTORELOAD(&htim6, newArr);
+    // 2. Clear voices
+    for(int i = 0; i < MAX_VOICES; i++) {
+        voices[i].active = 0;
+        voices[i].phase = 0;
+    }
 
-        // 3. Reset counter to 0 so the new speed applies immediately
-        __HAL_TIM_SET_COUNTER(&htim6, 0);
+    // 3. Start Timer at FIXED frequency (e.g. 22kHz)
+    // Note: Configure TIM6 in CubeMX to trigger at 22000Hz
+    HAL_TIM_Base_Start(&htim6);
 
-        // 4. Ensure timer is running
-        HAL_TIM_Base_Start(&htim6);
+    // 4. Start DAC with Circular DMA
+    HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)dmaBuffer, BUFFER_SIZE, DAC_ALIGN_12B_R);
+
+    audioInitialized = 1;
+}
+
+// Process a portion of the buffer (start to end)
+void FillBuffer(uint32_t *buffer, int start, int length) {
+    for (int i = 0; i < length; i++) {
+        int32_t sampleAccumulator = 0;
+        int activeCount = 0;
+
+        // Loop through all voices (Polyphony!)
+        for (int v = 0; v < MAX_VOICES; v++) {
+            if (voices[v].active) {
+                // 1. Get the integer part of the phase index
+                int idx = (int)voices[v].phase;
+
+                // 2. Add sample from LUT to accumulator
+                sampleAccumulator += sineLUT[idx];
+
+                // 3. Advance phase
+                voices[v].phase += voices[v].phaseStep;
+
+                // 4. Wrap phase if it exceeds table size
+                if (voices[v].phase >= SINE_RES) {
+                    voices[v].phase -= SINE_RES;
+                }
+                activeCount++;
+            }
+        }
+
+        // 5. Handling Volume/Clipping
+        // If we simply add two waves of 1900 amplitude, we get 3800.
+        // 3800 + 2048 (center) = 5848 -> DAC Overflow!
+        // Simple fix: Divide result by number of active voices or a fixed number.
+        if (activeCount > 0) {
+            sampleAccumulator /= activeCount; // Auto-gain
+        }
+
+        // 6. Write to buffer: Center Offset + Mixed Signal
+        buffer[start + i] = (uint32_t)(2048 + sampleAccumulator);
     }
 }
 
+// Called when first half of buffer is played
+void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
+    FillBuffer(dmaBuffer, 0, BUFFER_SIZE / 2);
+}
+
+// Called when second half of buffer is played
+void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
+    FillBuffer(dmaBuffer, BUFFER_SIZE / 2, BUFFER_SIZE / 2);
+}
+
+void PlayNote(int voiceIndex, float freq) {
+    if (voiceIndex >= MAX_VOICES) return;
+
+    if (freq == 0) {
+        voices[voiceIndex].active = 0;
+    } else {
+        // Calculate Step Size
+        // Formula: Step = (LUT_Size * Freq) / Sample_Rate
+        voices[voiceIndex].phaseStep = ((float)SINE_RES * freq) / (float)SAMPLE_RATE;
+        voices[voiceIndex].active = 1;
+    }
+}
 
 void Minesweeper_InitBoard(void) {
     // 0) Reset state
@@ -773,27 +852,26 @@ int main(void)
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
-  // --- 1. Generate Sine Wave Data ---
-    // We fill the buffer with values representing a sine wave.
-    // 12-bit DAC = values between 0 and 4095.
-    // We use 3.14159 * 2 for a full circle (radians).
+  InitAudio();
 
-    for (int i = 0; i < 2 * DMA_BUFFER_SIZE; i++)
-    {
-        // Calculate angle:
-        // We want one full sine wave cycle every 32 samples (DMA_BUFFER_SIZE)
-        double angle = (2.0 * 3.14159 * i) / (double)DMA_BUFFER_SIZE;
+  // Play a C Major Chord
+  PlayNote(0, 261.63); // C4
+  PlayNote(1, 329.63); // E4
+  PlayNote(2, 392.00); // G4
 
-        // Calculate value: Center (2048) + Amplitude (1900) * sin(angle)
-        // We use 1900 amplitude to stay safely within 0-4095 range
-        dmaBuffer[i] = (uint32_t)(OUTPUT_MID + (1900 * sin(angle)));
-    }
+  HAL_Delay(10000);
 
-    // --- 2. Start the Timer ---
-    HAL_TIM_Base_Start(&htim6);
+  // Play a C Major Chord
+  PlayNote(0, 261.63); // C4
+  PlayNote(1, 311.13); // E4
+  PlayNote(2, 392.00); // G4
 
-    // --- 3. Start DAC with DMA ---
-    HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)dmaBuffer, 2 * DMA_BUFFER_SIZE, DAC_ALIGN_12B_R);
+  HAL_Delay(10000);
+
+  // Stop everything
+  PlayNote(0, 0);
+  PlayNote(1, 0);
+  PlayNote(2, 0);
 
 
   //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
