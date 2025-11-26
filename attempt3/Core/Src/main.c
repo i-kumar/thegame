@@ -67,16 +67,52 @@ typedef struct ledData{
 #define BUFFER_SIZE 256     // Size of the DMA buffer (processed in two halves of 128)
 #define SINE_RES 2048       // Resolution of our sine wave table (larger = smoother)
 
-// Musical Note Frequencies (Hz)
-#define NOTE_C4 261
-#define NOTE_D4 293
-#define NOTE_E4 329
-#define NOTE_F4 349
-#define NOTE_G4 392
-#define NOTE_A4 440
-#define NOTE_B4 493
-#define NOTE_C5 523
-#define NOTE_OFF 0
+// notes
+#define B2 123.47
+#define C3 130.81
+#define C3S 138.59
+#define D3 146.83
+#define D3S 155.56
+#define E3 164.81
+#define F3 174.61
+#define F3S 185.00
+#define G3 196.00
+#define G3S 207.65
+#define A3 220.00
+#define A3S 233.08
+#define B3 246.94
+#define C4 261.63
+#define C4S 277.18
+#define D4 293.66
+#define D4S 311.13
+#define E4 329.63
+#define F4 349.23
+#define F4S 369.99
+#define G4 392.00
+#define G4S 415.30
+#define A4 440.00
+#define A4S 466.16
+#define B4 493.88
+#define C5 523.25
+#define C5S 554.37
+#define D5 587.33
+#define D5S 622.25
+#define E5 659.25
+#define F5 698.46
+#define F5S 739.99
+#define G5 783.99
+#define G5S 830.61
+#define A5 880.00
+#define A5S 932.33
+#define B5 987.77
+#define C6 1046.50
+#define C6S 1108.73
+#define D6 1174.66
+#define D6S 1244.51
+#define E6 1318.51
+#define F6 1396.91
+#define F6S 1479.98
+#define G6 1567.98
 
 /* USER CODE END PD */
 
@@ -94,6 +130,19 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim6;
 DMA_HandleTypeDef hdma_tim2_ch1;
+
+//                   _         _   _
+//                  (_)       | | | |
+//   _ __ ___   __ _ _ _ __   | |_| |__   ___ _ __ ___   ___
+//  | '_ ` _ \ / _` | | '_ \  | __| '_ \ / _ \ '_ ` _ \ / _ \
+//  | | | | | | (_| | | | | | | |_| | | |  __/ | | | | |  __/
+//  |_| |_| |_|\__,_|_|_| |_|  \__|_| |_|\___|_| |_| |_|\___|
+//  ========  composed by Ishan Kumar - 11/25/2025  =========
+				          // 1                            //2                             //3                             //4                             //5                             //6                             //7                             //8                             //9                             //10                            //11                            //12                            //13                            //14                            //15                            //16
+int bass[128]          = {E3, E4, E3, E4, E3, E4, E3, E4, E3, E4, E3, E4, E3, E4, E3, E4, D3, D4, D3, D4, D3, D4, D3, D4, D3, D4, D3, D4, D3, D4, D3, D4, C3, C4, C3, C4, C3, C4, C3, C4, C3, C4, C3, C4, C3, C4, C3, C4, B2, B3, B2, B3, B2, B3, B2, B3, B2, B3, B2, B3, B2, B3, B2, B3, E3, E4, E3, E4, E3, E4, E3, E4, E3, E4, E3, E4, E3, E4, E3, E4, D3, D4, D3, D4, D3, D4, D3, D4, D3, D4, D3, D4, D3, D4, D3, D4, C3, C4, C3, C4, C3, C4, C3, C4, C3, C4, C3, C4, C3, C4, C3, C4, B2, B3, B2, B3, B2, B3, B2, B3, B2, B3, B2, B3, B2, B3, B2, B3 };
+int melody[128]        = {B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, C6, B5, B5, C6, B5, B5, C6, B5, B5, B5, B5, B5, B5, B5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, C6, B5, B5, C6, B5, B5, C6, B5, B5, B5, B5, B5, B5, B5 };
+int counterMelody[128] = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, G6, G6, G6, G6, F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,D6S,D6S,D6S,D6S,E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, D6S,D6S,D6S,D6S,00, 00, 00, 00, 00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,00, D3S};
+int chordSupport[128]  = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S,00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S};
 
 /* USER CODE BEGIN PV */
 
@@ -854,24 +903,20 @@ int main(void)
 
   InitAudio();
 
-  // Play a C Major Chord
-  PlayNote(0, 261.63); // C4
-  PlayNote(1, 329.63); // E4
-  PlayNote(2, 392.00); // G4
+  // play main theme
+  for (int i = 0; i < 128; i++){
+	  PlayNote(0, bass[i]);
+	  PlayNote(1, melody[i]);
+	  PlayNote(2, counterMelody[i]);
+	  PlayNote(3, chordSupport[i]);
 
-  HAL_Delay(10000);
+	  HAL_Delay(187);
+  }
 
-  // Play a C Major Chord
-  PlayNote(0, 261.63); // C4
-  PlayNote(1, 311.13); // E4
-  PlayNote(2, 392.00); // G4
-
-  HAL_Delay(10000);
-
-  // Stop everything
   PlayNote(0, 0);
   PlayNote(1, 0);
   PlayNote(2, 0);
+  PlayNote(3, 0);
 
 
   //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
