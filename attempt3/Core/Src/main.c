@@ -182,7 +182,8 @@ int floodMaxStep = 0;
 int cursorX = 0;
 int cursorY = 0;
 
-
+int flagSoundToggle = 0;
+int playedLosingSoundEffect = 0;
 
 // PS2 Controller variables
 int32_t current_value = 50;
@@ -208,7 +209,8 @@ typedef struct {
     float phaseStep;   // How much to step forward per sample
 } Voice;
 
-#define MAX_VOICES 4// Polyphony: Let's allow 4 simultaneous notes
+// 5th voice (index 4) reserved for sound effects
+#define MAX_VOICES 5
 Voice voices[MAX_VOICES];
 
 // Initialization Flag
@@ -763,12 +765,14 @@ void PS2_ProcessButtons(uint16_t buttons) {
 
     if (pressed & PS2_CIRCLE) { //minsweeper flag
         toggleFlagAtCursor();
+        flagSoundToggle = 1;
     }
 
     if (pressed & PS2_TRIANGLE) {
         Minesweeper_InitBoard();
         cursorX = 0;
         cursorY = 0;
+        playedLosingSoundEffect = 0;
     }
     if (pressed & PS2_SQUARE) {
         // tyoggle test
@@ -903,22 +907,6 @@ int main(void)
 
   InitAudio();
 
-  // play main theme
-  for (int i = 0; i < 128; i++){
-	  PlayNote(0, bass[i]);
-	  PlayNote(1, melody[i]);
-	  PlayNote(2, counterMelody[i]);
-	  PlayNote(3, chordSupport[i]);
-
-	  HAL_Delay(187);
-  }
-
-  PlayNote(0, 0);
-  PlayNote(1, 0);
-  PlayNote(2, 0);
-  PlayNote(3, 0);
-
-
   //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
   //HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 
@@ -930,13 +918,55 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+  int currNote = 0;
+  int prescalerForMusic = 0;
+
   while (1)
   {
-    /* USER CODE END WHILE */
+	// if game over, play sad trombone
+	if (gameOver && !playedLosingSoundEffect){
+	    PlayNote(0, D5);
+	    PlayNote(1, 0);
+	    PlayNote(2, 0);
+	    PlayNote(3, 0);
+	    HAL_Delay(600);
+	    PlayNote(0, C5S);
+	    HAL_Delay(600);
+	    PlayNote(0, C5);
+	    HAL_Delay(600);
+	    PlayNote(0, B4);
+	    HAL_Delay(3000);
+	    playedLosingSoundEffect = 1;
+	}
+
+	// play music
+	if (prescalerForMusic < 3){
+		prescalerForMusic++;
+	} else {
+		prescalerForMusic = 0;
+
+		// every 185 ms
+		if (currNote == 128) {
+			currNote = 0;
+		} else {
+		    PlayNote(0, bass[currNote]);
+		    PlayNote(1, melody[currNote]);
+		    PlayNote(2, counterMelody[currNote]);
+		    PlayNote(3, chordSupport[currNote]);
+		    PlayNote(4, 0);
+
+		    if (flagSoundToggle){
+			    PlayNote(4, C5);
+			    flagSoundToggle = 0;
+		    }
+
+		    currNote++;
+		}
+	}
+
 	PS2_MainTask();        // read controller, update cursor + buttons
     Minesweeper_Render();  // draw entire board + cursor into storage[]
     showLeds();            // send storage[] out via DMAf
-
 
     if (gameWon) {
         winPulseTimer++;
@@ -953,7 +983,10 @@ int main(void)
             }
         }
     }
+
     HAL_Delay(5);
+
+    /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
