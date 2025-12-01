@@ -148,8 +148,8 @@ int chordSupport[128]  = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00
 
 
 //minesweeper variables
-#define GRID_W 16
-#define GRID_H 16
+#define GRID_W 24
+#define GRID_H 24
 
 typedef enum {
     TILE_EMPTY = 0,
@@ -191,7 +191,7 @@ int32_t current_value = 50;
 uint16_t prev_buttons = 0xFFFF;
 
 // storage for whole screen
-#define NUM_LEDS 16*16
+#define NUM_LEDS (GRID_W * GRID_H)
 struct ledData storage[NUM_LEDS];
 
 // buffer storage
@@ -729,7 +729,7 @@ void PS2_ProcessButtons(uint16_t buttons) {
     }
 
     if (pressed & PS2_UP) {
-    	if (cursorY == 15){
+    	if (cursorY == GRID_H - 1){
     		cursorY = 0;
     	} else {
     		cursorY++;
@@ -738,7 +738,7 @@ void PS2_ProcessButtons(uint16_t buttons) {
 
     if (pressed & PS2_DOWN) {
     	if (cursorY == 0){
-    		cursorY = 15;
+    		cursorY == GRID_H - 1;
     	} else {
     		cursorY--;
     	}
@@ -746,14 +746,14 @@ void PS2_ProcessButtons(uint16_t buttons) {
 
     if (pressed & PS2_LEFT) {
     	if (cursorX == 0){
-    		cursorX = 15;
+    		cursorX = GRID_W - 1;
     	} else {
     		cursorX--;
     	}
     }
 
     if (pressed & PS2_RIGHT) {
-    	if (cursorX == 15){
+    	if (cursorX == GRID_W - 1){
     		cursorX = 0;
     	} else {
     		cursorX++;
@@ -859,10 +859,10 @@ void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
 
   if (y % 2 == 0) {
     // even row
-    realIndex = y * 16 + x;
+	  realIndex = y * GRID_W + x;
   } else {
     // odd row (reversed)
-    realIndex = y * 16 + (16 - 1 - x);
+	  realIndex = y * GRID_W + (GRID_W - 1 - x);
   }
 
   storage[realIndex] = (struct ledData){r, g, b};
