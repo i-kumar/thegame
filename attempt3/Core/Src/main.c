@@ -125,6 +125,8 @@ typedef struct ledData{
 DAC_HandleTypeDef hdac1;
 DMA_HandleTypeDef hdma_dac1_ch1;
 
+I2C_HandleTypeDef hi2c1;
+
 SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
@@ -132,6 +134,8 @@ TIM_HandleTypeDef htim6;
 DMA_HandleTypeDef hdma_tim2_ch1;
 
 /* USER CODE BEGIN PV */
+
+//LCD function definitions
 
 //                   _         _   _
 //                  (_)       | | | |
@@ -188,6 +192,7 @@ int animRevealStep[MAX_H][MAX_W];
 
 int gameOver = 0;
 int gameWon = 0;
+int gameLoss = 0;
 int winPulseTimer = 0;
 int testMode = 0;
 int flagsPlaced = 0;
@@ -203,6 +208,12 @@ int cursorY = 0;
 
 int flagSoundToggle = 0;
 int playedLosingSoundEffect = 0;
+int playedWinningSoundEffect = 0;
+int writeMode = 0;
+int writePlaying = 0;
+
+
+
 
 //int bombsRemaining = bombCount - flagsPlaced; //FOR VARUN
 
@@ -255,8 +266,17 @@ static void MX_TIM2_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_DAC1_Init(void);
 static void MX_TIM6_Init(void);
-void SetGameMode(GameMode mode);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
+
+void LCD_Init(I2C_HandleTypeDef *hi2c);
+void LCD_game_win(void);
+void LCD_game_loss(void);
+void LCD_write_test(void);
+void LCD_game_bomb(GameMode mode);
+void LCD_game_mode(GameMode mode);
+void LCD_update_bomb(int bombCnt);
+void SetGameMode(GameMode mode);
 
 // PS2 Controller function prototypes
 uint8_t PS2_TransferByte(uint8_t data);
@@ -399,8 +419,8 @@ void Minesweeper_InitBoard(void) {
 	flagsPlaced = 0;
     gameOver = 0;
     gameWon  = 0;
+    gameLoss = 0;
     winPulseTimer = 0;
-
     //animation stuff
     floodAnimating = 0;
     floodAnimFrame = 0;
@@ -490,7 +510,7 @@ void checkWin(void){
             }
         }
     }
-
+    //if you go through the entire board, then we have a win
     //status check
     gameOver = 1;
     gameWon  = 1;
@@ -676,6 +696,7 @@ void revealTileAtCursor(void) {
     if (board[y][x] == TILE_BOMB) {
         tileState[y][x] = STATE_REVEALED;
         gameOver = 1;
+        gameLoss = 1;
         return;
     }
 
@@ -699,17 +720,23 @@ void toggleFlagAtCursor(void) {
     TileState *s = &tileState[cursorY][cursorX];
     if (*s == STATE_HIDDEN) {
         *s = STATE_FLAGGED;
-        flagsPlaced--;
-        bombsRemaining = bombCount - flagsPlaced;
+        flagsPlaced++;
+        bombsRemaining = flagsPlaced;
     } else if (*s == STATE_FLAGGED) {
         *s = STATE_HIDDEN;
         flagsPlaced--;
-        bombsRemaining = bombCount - flagsPlaced;
+        bombsRemaining = flagsPlaced;
     }
+    writeMode = 0;
+    if(!writeMode){
+    	LCD_update_bomb(bombsRemaining);
+    	writeMode = 1;
+    }
+
 }
 
 void onXPress() {
-    revealTileAtCursor();
+	revealTileAtCursor();
 }
 
 
@@ -805,6 +832,11 @@ void PS2_ProcessButtons(uint16_t buttons) {
     }
 
     if (pressed & PS2_X) {
+    	writePlaying = 1;
+    	if(writePlaying){
+    		LCD_set_bomb(currentMode);
+    		writePlaying = 0;
+    	}
     	onXPress();
     }
 
@@ -818,6 +850,7 @@ void PS2_ProcessButtons(uint16_t buttons) {
         cursorX = 0;
         cursorY = 0;
         playedLosingSoundEffect = 0;
+        playedWinningSoundEffect = 0;
     }
     if (pressed & PS2_SQUARE) {
         // tyoggle test
@@ -826,23 +859,44 @@ void PS2_ProcessButtons(uint16_t buttons) {
         } else {
             testMode = 0;  // go back to normal random mode
         }
+        writeMode = 0;
+        if(!writeMode){
+            LCD_write_test();
+			writeMode = 1;
+		}
 
         Minesweeper_InitBoard();  // rebuild board using new mode
         cursorX = 0;
         cursorY = 0;
     }
     //CHANGE TO OPEN THINGS
-    if (pressed & PS2_L1) {                // easy mode
+    if (pressed & PS2_L1) {
+    	writeMode = 0;// easy mode
         SetGameMode(MODE_EASY);
+        if(!writeMode){
+        	LCD_game_mode(MODE_EASY);
+        	writeMode = 1;
+        }
+
     }
 
     if (pressed & PS2_R1) {                // medium mode
+    	writeMode = 0;
         SetGameMode(MODE_MEDIUM);
+        if(!writeMode){
+        	LCD_game_mode(MODE_MEDIUM);
+        	writeMode = 1;
+        }
     }
 
-//    if (pressed & PS2_R2) {                // hard mode
-//        SetGameMode(MODE_HARD);
-//    }
+    if (pressed & PS2_R2) {                // hard mode
+    	writeMode = 0;
+        SetGameMode(MODE_HARD);
+        if(!writeMode){
+        	LCD_game_mode(MODE_HARD);
+        	writeMode = 1;
+        }
+    }
 
 }
 
@@ -963,7 +1017,10 @@ int main(void)
   MX_SPI1_Init();
   MX_DAC1_Init();
   MX_TIM6_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+
+  LCD_Init(&hi2c1);
 
   InitAudio();
 
@@ -984,7 +1041,8 @@ int main(void)
   while (1)
   {
 	// if game over, play sad trombone
-	if (gameOver && !playedLosingSoundEffect){
+	if (gameLoss && !playedLosingSoundEffect){
+		LCD_game_loss();
 	    PlayNote(0, D5);
 	    PlayNote(1, 0);
 	    PlayNote(2, 0);
@@ -997,6 +1055,12 @@ int main(void)
 	    PlayNote(0, B4);
 	    HAL_Delay(3000);
 	    playedLosingSoundEffect = 1;
+	}
+
+	if(gameWon && !playedWinningSoundEffect){
+		//ISHAN ADD WIN SOUND HERE//
+		LCD_game_win();
+		playedWinningSoundEffect = 1;
 	}
 
 	// play music
@@ -1030,6 +1094,7 @@ int main(void)
 
     if (gameWon) {
         winPulseTimer++;
+
     }
     //anjimattion
     if (floodAnimating) {
@@ -1144,6 +1209,54 @@ static void MX_DAC1_Init(void)
   /* USER CODE BEGIN DAC1_Init 2 */
 
   /* USER CODE END DAC1_Init 2 */
+
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x00D09BE3;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
 
 }
 
@@ -1524,14 +1637,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(PS2_CS_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PB8 PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PE0 */
   GPIO_InitStruct.Pin = GPIO_PIN_0;

@@ -1,5 +1,6 @@
 #include "stm32l4xx_hal.h"
-
+#include "game.h"
+#include <stdio.h>
 /* -------------------- I2C LCD Definitions ----------------------------------
  * The HD44780 LCD normally talks over parallel bus. The I2C breakout (PCF8574)
  * converts serial I2C → 8-bit GPIO pins:
@@ -245,3 +246,81 @@ void LCD_Init(I2C_HandleTypeDef *hi2c)
 
     LCD_Clear();
 }
+
+void LCD_game_win(){
+	LCD_Clear();
+	LCD_Home();
+	LCD_PrintStr("HUZZAH!");
+	LCD_SetCursor(0, 1);
+	LCD_PrintStr("YOU WIN!!!");
+
+
+}
+
+void LCD_game_loss(){
+	LCD_Clear();
+	LCD_Home();
+	LCD_PrintStr("WOMP WOMP");
+	LCD_SetCursor(0, 1);
+	LCD_PrintStr("YOU LOST :(");
+}
+
+void LCD_game_mode(GameMode mode){
+	LCD_Clear();
+	LCD_Home();
+	LCD_SetCursor(0, 0);
+	if(mode == MODE_EASY){
+		LCD_PrintStr("EASY MODE");
+		LCD_SetCursor(0, 1);
+		LCD_PrintStr("~For John");
+	}
+	else if(mode == MODE_MEDIUM){
+		LCD_PrintStr("MEDIUM MODE");
+		LCD_SetCursor(0, 1);
+		LCD_PrintStr("~For Kannan");
+	}else if(mode == MODE_HARD){
+		LCD_PrintStr("HARD MODE");
+		LCD_SetCursor(0, 1);
+		LCD_PrintStr("~For Matt&James");
+
+	}
+}
+void LCD_write_test(){
+	LCD_Clear();
+	LCD_Home();
+	LCD_SetCursor(0, 0);
+	LCD_PrintStr("TEST MODE");
+	LCD_SetCursor(0, 1);
+	LCD_PrintStr("~For Vish");
+
+}
+
+void LCD_set_bomb(GameMode mode){
+	LCD_Clear();
+	LCD_Home();
+	LCD_SetCursor(0, 0);
+	LCD_PrintStr("BOMB COUNTER:");
+	LCD_SetCursor(0, 1);
+	if(mode == MODE_EASY){
+		LCD_PrintStr("0 out of 10");
+	}
+	else if(mode == MODE_MEDIUM){
+		LCD_PrintStr("0 out of 30");
+	}
+	else if(mode == MODE_HARD){
+		LCD_PrintStr("0 out of 40");
+	}
+}
+
+void LCD_update_bomb(int bombCnt){
+	LCD_SetCursor(0, 1);
+	char buffer[2]; // Create a buffer (16 is the width of the screen)
+
+	// Format the string into the buffer
+	sprintf(buffer, "%d", bombCnt);
+	LCD_PrintStr(buffer);
+}
+
+
+
+
