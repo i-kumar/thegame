@@ -162,12 +162,12 @@ int michiganchordSupport[128]  = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00
 
 
 //minesweeper variables
-#define PANEL_W 16   // physical LEDs per row
-#define PANEL_H 16   // physical rows
+#define PANEL_W 24   // physical LEDs per row
+#define PANEL_H 24   // physical rows
 int GRID_W = 16;
 int GRID_H = 16;
-#define MAX_W 16
-#define MAX_H 16
+#define MAX_W 24
+#define MAX_H 24
 
 int bombCount = 20; //(default medium)
 
@@ -203,6 +203,7 @@ int animRevealStep[MAX_H][MAX_W];
 int gameOver = 0;
 int gameWon = 0;
 int gameLoss = 0;
+int powerCycle = 0;
 int firstXPress = 0;
 int gameStart = 0;
 int winPulseTimer = 0;
@@ -285,6 +286,7 @@ void LCD_Init(I2C_HandleTypeDef *hi2c);
 void LCD_game_win(void);
 void LCD_game_loss(void);
 void LCD_write_test(void);
+void LCD_write_hello(void);
 void LCD_set_bomb(GameMode mode);
 void LCD_game_mode(GameMode mode);
 void LCD_update_bomb(int bombCnt);
@@ -339,6 +341,8 @@ void SetGameMode(GameMode mode) {
     Minesweeper_InitBoard();
     cursorX = 0;
     cursorY = 0;
+    firstXPress = 0;
+    flagsPlaced = 0;
 }
 
 void InitAudio() {
@@ -727,25 +731,33 @@ void revealTileAtCursor(void) {
 void toggleFlagAtCursor(void) {
 
     if (gameOver) return;
-    int bombsRemaining;
 
     TileState *s = &tileState[cursorY][cursorX];
+
+    // Don't allow flagging revealed tiles
+    if (*s == STATE_REVEALED) {
+        return;    // <-- early exit prevents crashes
+    }
+
+    int bombsRemaining;
+
     if (*s == STATE_HIDDEN) {
         *s = STATE_FLAGGED;
         flagsPlaced++;
-        bombsRemaining = flagsPlaced;
     } else if (*s == STATE_FLAGGED) {
         *s = STATE_HIDDEN;
         flagsPlaced--;
-        bombsRemaining = flagsPlaced;
-    }
-    writeMode = 0;
-    if(!writeMode){
-    	LCD_update_bomb(bombsRemaining);
-    	writeMode = 1;
     }
 
+    bombsRemaining = flagsPlaced;
+
+    writeMode = 0;
+    if (!writeMode) {
+        LCD_update_bomb(bombsRemaining);
+        writeMode = 1;
+    }
 }
+
 
 void onXPress() {
 	revealTileAtCursor();
@@ -856,15 +868,7 @@ void PS2_ProcessButtons(uint16_t buttons) {
 
     	onXPress();
     }
-
-    writePlaying = 1;           // arm the one-shot for this press
-
-        if (!firstXPress) {         // first time EVER
-            LCD_set_bomb(currentMode);
-            firstXPress = 1;
-        }
-
-        onXPress();                 // always run the X action
+                // always run the X action
 
 
     if (pressed & PS2_CIRCLE) { //minsweeper flag
@@ -874,10 +878,17 @@ void PS2_ProcessButtons(uint16_t buttons) {
 
     if (pressed & PS2_TRIANGLE) {
         Minesweeper_InitBoard();
+        firstXPress = 0;
         cursorX = 0;
         cursorY = 0;
         playedLosingSoundEffect = 0;
         playedWinningSoundEffect = 0;
+        writePlaying = 1;
+        if(writePlaying){
+        	LCD_write_hello();
+        	writePlaying = 0;
+        }
+
     }
     if (pressed & PS2_SQUARE) {
         // tyoggle test
@@ -899,6 +910,7 @@ void PS2_ProcessButtons(uint16_t buttons) {
     //CHANGE TO OPEN THINGS
     if (pressed & PS2_L1) {
     	writeMode = 0;// easy mode
+
         SetGameMode(MODE_EASY);
         if(!writeMode){
         	LCD_game_mode(MODE_EASY);
@@ -1122,6 +1134,12 @@ int main(void)
     if (gameWon) {
         winPulseTimer++;
 
+    }
+    if(!firstXPress){
+    	if(!writeMode){
+    		LCD_write_hello();
+    		writeMode = 1;
+    	}
     }
     //anjimattion
     if (floodAnimating) {

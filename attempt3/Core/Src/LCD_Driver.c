@@ -313,14 +313,43 @@ void LCD_set_bomb(GameMode mode){
 }
 
 void LCD_update_bomb(int bombCnt){
-	LCD_SetCursor(0, 1);
-	char buffer[2]; // Create a buffer (16 is the width of the screen)
+    LCD_SetCursor(0, 1);
 
-	// Format the string into the buffer
-	sprintf(buffer, "%d", bombCnt);
-	LCD_PrintStr(buffer);
+    // Clear the full line first (optional but safest)
+    LCD_PrintStr("                ");  // 16 spaces
+    LCD_SetCursor(0, 1);
+
+    char buffer[4];  // enough for numbers up to 999
+
+    if (bombCnt < 10) {
+        // One-digit number → print with leading space
+        sprintf(buffer, " %d", bombCnt);
+    } else {
+        // Two-digit number → no leading space
+        sprintf(buffer, "%d", bombCnt);
+    }
+
+    LCD_PrintStr(buffer);
+
+    // Re-print the static text
+//    if (currentMode == MODE_EASY)
+//        LCD_PrintStr(" out of 10");
+//    else if (currentMode == MODE_MEDIUM)
+//        LCD_PrintStr(" out of 30");
+//    else if (currentMode == MODE_HARD)
+//        LCD_PrintStr(" out of 40");
 }
 
+void LCD_write_hello(){
+	LCD_Clear();
+	LCD_Home();
+	LCD_SetCursor(0, 0);
+	LCD_PrintStr("Welcome:");
+	LCD_SetCursor(0, 1);
+	LCD_PrintStr("To Minesweeper");
+
+
+}
 
 
 
