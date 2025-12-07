@@ -154,12 +154,11 @@ int chordSupport[128]  = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00
 
 //                   _         _   _
 //  MICHIGAN THEME
-				                  // 1                            //2                             //3                             //4                             //5                             //6                             //7                             //8                             //9                             //10                            //11                            //12                            //13                            //14                            //15                            //16
-int michiganbass[128]          = {C5, C5, C5, C5, G4S,G4S,A4S,};
-int michiganmelody[128]        = {B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, C6, B5, B5, C6, B5, B5, C6, B5, B5, B5, B5, B5, B5, B5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, C6, B5, B5, C6, B5, B5, C6, B5, B5, B5, B5, B5, B5, B5 };
-int michigancounterMelody[128] = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, G6, G6, G6, G6, F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,D6S,D6S,D6S,D6S,E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, D6S,D6S,D6S,D6S,00, 00, 00, 00, 00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,00, D3S};
-int michiganchordSupport[128]  = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S,00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S};
-
+				                    // 1                            //2                             //3                             //4                             //5                             //6                             //7                             //8                             //9                             //10                            //11                            //12                            //13                            //14                            //15                            //16
+int michiganmelody[128]          = {C5, C5, C5, C5, G4S,G4S,A4S,A4S,C5, C5, G4S,G4S,A4S,A4S,C5, C5, C5S,C5S,C5S,C5S,A4S,A4S,C5, C5, C5S,C5S,A4S,A4S,C5, C5, C5S,C5S,D5S,D5S,D5S,D5S,F5, F5, F5, C5, C5, C5, C5S,C5S,G4S,G4S,A4S,A4S,C5, C5, C5, C5, A4S,A4S,G4S,G4S,D5S,D5S,D5S,D5S,D5S,D5S,D5S,D5S,C5, C5, C5, C5, G4S,G4S,A4S,A4S,C5, C5, G4S,G4S,A4S,A4S,C5, C5, C5S,C5S,C5S,C5S,A4S,A4S,C5, C5, C5S,C5S,A4S,A4S,C5, C5, C5S,C5S,D5S,D5S,D5S,D5S,F5, F5, F5, C5, C5, C5, C5S,C5S,G4S,G4S,A4S,A4S,C5, C5, D5S,D5S,C5, C5, C5, A4S,G4S,G4S,G4S,G4S,G4S,G4S,G4S,G4S};
+int michigancounterMelody[128]   = {G4S,G4S,G4S,G4S,00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, A4S,A4S,A4S,A4S,00, 00, G4S,G4S,G4, G4, D4S,D4S,F4, F4, G4, G4, G4S,G4S,F4S,F4S,F4, F4, C4, C4, G3S,G3S,A3S,A3S,C4, C4, C4S,C4S,D4, D4, D4, D4, D4, D4, D4, D4, D4S,D4S,D4S,D4S,D4S,D4S,D4S,D4S,G4S,G4S,G4S,G4S,00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, A4S,A4S,A4S,A4S,00, 00, G4S,G4S,G4, G4, D4S,D4S,F4, F4, G4, G4, G4S,G4S,F4S,F4S,F4, F4, C4, C4, G3S,G3S,A3S,A3S,C4, C4, C4S,C4S,C4, C4, C4, C4, D4S,D4S,D4S,C4S,C4, C4, C4, C4, C4, C4, C4, C4};
+int michiganchordSupport[128]    = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, G4, G4, G4, G4, G4, G4, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00};
+int michiganchordSupportTwo[128] = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, A4S,A4S,B4, B4, C5, C5, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00};
 
 //minesweeper variables
 #define PANEL_W 16   // physical LEDs per row
@@ -267,6 +266,8 @@ uint8_t audioInitialized = 0;
 
 //brightness variable
 uint8_t brightness = 40;
+
+int playingTheme = 0; //0 = theme 1 = win music
 
 /* USER CODE END PV */
 
@@ -433,6 +434,7 @@ void Minesweeper_InitBoard(void) {
     gameWon  = 0;
     gameLoss = 0;
     winPulseTimer = 0;
+    playingTheme = 0;
     //animation stuff
     floodAnimating = 0;
     floodAnimFrame = 0;
@@ -1085,7 +1087,8 @@ int main(void)
 	}
 
 	if(gameWon && !playedWinningSoundEffect){
-		//ISHAN ADD WIN SOUND HERE//
+		playingTheme = 1;
+		currNote = 0;
 		LCD_game_win();
 		playedWinningSoundEffect = 1;
 	}
@@ -1099,7 +1102,7 @@ int main(void)
 		// every 185 ms
 		if (currNote == 128) {
 			currNote = 0;
-		} else {
+		} else if(playingTheme){
 		    PlayNote(0, bass[currNote]);
 		    PlayNote(1, melody[currNote]);
 		    PlayNote(2, counterMelody[currNote]);
@@ -1112,6 +1115,14 @@ int main(void)
 		    }
 
 		    currNote++;
+		} else {
+			// playing michigan theme
+		    PlayNote(0, michiganmelody[currNote]);
+		    PlayNote(1, michigancounterMelody[currNote]);
+		    PlayNote(2, michiganchordSupport[currNote]);
+		    PlayNote(3, michiganchordSupportTwo[currNote]);
+		    currNote++;
+
 		}
 	}
 
