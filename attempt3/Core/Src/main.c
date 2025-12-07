@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <math.h>
 #include <stdlib.h>   // for random
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -151,6 +152,15 @@ int counterMelody[128] = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00
 int chordSupport[128]  = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S,00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S};
 
 
+//                   _         _   _
+//  MICHIGAN THEME
+				                  // 1                            //2                             //3                             //4                             //5                             //6                             //7                             //8                             //9                             //10                            //11                            //12                            //13                            //14                            //15                            //16
+int michiganbass[128]          = {C5, C5, C5, C5, G4S,G4S,A4S,};
+int michiganmelody[128]        = {B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, C6, B5, B5, C6, B5, B5, C6, B5, B5, B5, B5, B5, B5, B5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, G5, G5, E5, E5, E5, E5, 00, E5, 00, C6, B5, B5, A5, A5, B5, B5, C6, B5, B5, C6, B5, B5, C6, B5, B5, B5, B5, B5, B5, B5 };
+int michigancounterMelody[128] = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, G6, G6, G6, G6, F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,F6S,D6S,D6S,D6S,D6S,E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, E6, D6S,D6S,D6S,D6S,00, 00, 00, 00, 00, D3S,00, D3S,00, D3S,00, D3S,00, D3S,00, D3S};
+int michiganchordSupport[128]  = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S,00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00 ,00, 00 ,00, F3S,00, F3S,00, F3S,00, F3S};
+
+
 //minesweeper variables
 #define PANEL_W 16   // physical LEDs per row
 #define PANEL_H 16   // physical rows
@@ -193,6 +203,8 @@ int animRevealStep[MAX_H][MAX_W];
 int gameOver = 0;
 int gameWon = 0;
 int gameLoss = 0;
+int firstXPress = 0;
+int gameStart = 0;
 int winPulseTimer = 0;
 int testMode = 0;
 int flagsPlaced = 0;
@@ -273,7 +285,7 @@ void LCD_Init(I2C_HandleTypeDef *hi2c);
 void LCD_game_win(void);
 void LCD_game_loss(void);
 void LCD_write_test(void);
-void LCD_game_bomb(GameMode mode);
+void LCD_set_bomb(GameMode mode);
 void LCD_game_mode(GameMode mode);
 void LCD_update_bomb(int bombCnt);
 void SetGameMode(GameMode mode);
@@ -383,7 +395,7 @@ void FillBuffer(uint32_t *buffer, int start, int length) {
         // 3800 + 2048 (center) = 5848 -> DAC Overflow!
         // Simple fix: Divide result by number of active voices or a fixed number.
         if (activeCount > 0) {
-            sampleAccumulator /= activeCount; // Auto-gain
+            sampleAccumulator /= 5; // Auto-gain
         }
 
         // 6. Write to buffer: Center Offset + Mixed Signal
@@ -833,12 +845,27 @@ void PS2_ProcessButtons(uint16_t buttons) {
 
     if (pressed & PS2_X) {
     	writePlaying = 1;
-    	if(writePlaying){
+    	if(!firstXPress){
     		LCD_set_bomb(currentMode);
-    		writePlaying = 0;
+    		firstXPress = 1;
+
     	}
+    	if (writePlaying) {             // executes only once per press
+    	    writePlaying = 0;           // clear it immediately so no flicker
+    	}
+
     	onXPress();
     }
+
+    writePlaying = 1;           // arm the one-shot for this press
+
+        if (!firstXPress) {         // first time EVER
+            LCD_set_bomb(currentMode);
+            firstXPress = 1;
+        }
+
+        onXPress();                 // always run the X action
+
 
     if (pressed & PS2_CIRCLE) { //minsweeper flag
         toggleFlagAtCursor();
