@@ -734,6 +734,7 @@ void revealTileAtCursor(void) {
 }
 
 
+
 void toggleFlagAtCursor(void) {
 
     if (gameOver) return;
@@ -830,18 +831,21 @@ void PS2_ProcessButtons(uint16_t buttons) {
     }
     if (pressed & PS2_START){
     	gameSelect = 1;
+    	clearLED();
     	LCD_select_game();
+    	showLeds();
     }
     if(gameSelect){
-    	LCD_PrintStr("836");
-    	LCD_select_game();
+    	//LCD_select_game();
+    	showLogo();
+    	showLeds();
     	if (pressed & PS2_X) {
-    		LCD_PrintStr("X:GM");
+    		//LCD_PrintStr("X:GM");
     		minesweeper = 1;
 			pong = 0;
 			gameSelect = 0;
 			playMinesweeper();
-			LCD_write_hello(minesweeper, pong);
+			//LCD_write_hello(minesweeper, pong);
 
     	}
 
@@ -850,12 +854,12 @@ void PS2_ProcessButtons(uint16_t buttons) {
 			minesweeper = 0;
 			pong = 1;
 			gameSelect = 0;
-			LCD_write_hello(minesweeper, pong);
+			//LCD_write_hello(minesweeper, pong);
 
 		}
 
     }
-    if(minesweeper){
+    else if(minesweeper){
 		if (pressed & PS2_UP) {
 			if (cursorY == GRID_H - 1){
 				cursorY = 0;
@@ -996,6 +1000,14 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim){
 	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
 }
 
+void clearLED(){
+	for (int y = 0; y < GRID_H; y++) {
+	        for (int x = 0; x < GRID_W; x++) {
+	            setPixel(x, y, 0, 0, 0);
+	        }
+	    }
+
+}
 // write all leds to buffer
 void writeLedsToBuffer(){
 	for (int i = 0; i < 60; i++){
@@ -1064,6 +1076,7 @@ void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
 }
 
 void playMinesweeper(){
+	LCD_write_hello(minesweeper, pong);
 	Minesweeper_InitBoard();
 	Minesweeper_Render();  // draw entire board + cursor into storage[]
 	showLeds();            // send storage[] out via DMAf
@@ -1184,7 +1197,7 @@ int main(void)
 
 		}
 	}
-
+	//LCD_PrintStr(" PRESS START TO PLAY");
 	PS2_MainTask();        // read controller, update cursor + buttons
 //	if(gameSelect){
 //		writeMode = 0;
@@ -1195,14 +1208,14 @@ int main(void)
 //
 //		//gameSelect = 0;
 //	}
-//	if(minesweeper){
+	if(minesweeper){
 //		LCD_write_hello(minesweeper, pong);
 //		if(!mineSweeper_initialized){
 //			Minesweeper_InitBoard();
 //		}
-//		Minesweeper_Render();  // draw entire board + cursor into storage[]
-//		showLeds();            // send storage[] out via DMAf
-//	}
+		Minesweeper_Render();  // draw entire board + cursor into storage[]
+		showLeds();            // send storage[] out via DMAf
+	}
 //	if(pong){
 //		LCD_write_hello(minesweeper, pong);
 //	}

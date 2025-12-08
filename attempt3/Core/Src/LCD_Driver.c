@@ -260,6 +260,10 @@ void LCD_Init(I2C_HandleTypeDef *hi2c)
     lcd_send(LCD_ENTRYMODESET | _entryMode, 0);
 
     LCD_Clear();
+    LCD_Home();
+	LCD_PrintStr("    WELCOME!   ");
+	LCD_SetCursor(0, 1);
+	LCD_PrintStr("  PRESS START  ");
 }
 
 void LCD_game_win(){
@@ -380,7 +384,7 @@ void LCD_write_hello(int ms, int pong) {
 		LCD_Clear();
 		LCD_Home();
 		LCD_SetCursor(0, 0);
-		LCD_PrintStr("Select Game Mode:");
+		LCD_PrintStr("SELECT GAME MDOE:");
 		LCD_SetCursor(0, 1);
 		LCD_PrintStr("L1, R1 or R2");
     }else if (pong){
@@ -416,19 +420,19 @@ void LCD_select_game() {
     LCD_PrintStr("GAME SELECTION MODE......");
     LCD_SetCursor(0, 1);
     LCD_PrintStr("MINESWEEPER (X) OR PONG (O)");
-    for(int i = 0; i < 17; ++i){
+    for(int i = 0; i < 30; ++i){
     	HAL_Delay(100);
     	LCD_ScrollDisplayLeft();
     }
-//    LCD_Clear();
-//	LCD_Home();
-//
-//	// Put full text on the first line (even if longer than 16 chars)
-//	// Print second line no   srmally
-//	LCD_SetCursor(0, 0);
-//	LCD_PrintStr("MINESWEEPER (X)");
-//	LCD_SetCursor(0, 1);
-//	LCD_PrintStr("PONG (O)");
+    LCD_Clear();
+	LCD_Home();
+
+	// Put full text on the first line (even if longer than 16 chars)
+	// Print second line no   srmally
+	LCD_SetCursor(0, 0);
+	LCD_PrintStr("MINESWEEPER (X)");
+	LCD_SetCursor(0, 1);
+	LCD_PrintStr("PONG (O)");
 
 
 }
