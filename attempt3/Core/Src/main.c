@@ -1191,7 +1191,7 @@ void playPong(){
 	    	showLogo();
 	    	LCD_select_game();
 
-	    	//clearLED();
+	    	clearLED();
 			//showLogo();
 	    	//showLeds();
 	    }
@@ -1249,30 +1249,51 @@ void playPong(){
 				ballStateMachine += 4;
 			}
 			// bottom bounce
+			// bottom bounce
 			if (ballY == 2){
-				if (ballX >= paddleX && ballX < paddleX + paddleSize) {
-				    // Calculate which segment was hit for angle
-				    int hitSegment = ballX - paddleX;
-				    if (paddleSize == 2) ballStateMachine = (hitSegment == 0) ? 0 : 3;
-				    else if (paddleSize == 3) ballStateMachine = hitSegment;
-				    else ballStateMachine = hitSegment; // size 4
-				    score++;
-				    LCD_update_score(score, pongHighScore);
-				}else{
-					lose = 1; // ggs
-					if(score > pongHighScore){
-						pongHighScore = score;
-						LCD_new_high_score(score);
-						gameWon = 1;
-					}else{
-						gameLoss = 1;
-						LCD_game_over_pong(score);
-						HAL_Delay(300); //might remove this
+			    if (ballX >= paddleX && ballX < paddleX + paddleSize) {
+			        // Calculate which segment was hit for angle
+			        int hitSegment = ballX - paddleX;
 
-					}
+			        // Map hit position to angle based on paddle size
+			        if (paddleSize == 2) {
+			            ballStateMachine = (hitSegment == 0) ? 0 : 3;
+			        } else if (paddleSize == 4) {
+			            ballStateMachine = hitSegment; // Direct mapping
+			        } else if (paddleSize == 5) {
+			            // Map 5 positions to 4 angles
+			            if (hitSegment == 0) ballStateMachine = 0;
+			            else if (hitSegment <= 2) ballStateMachine = 1;
+			            else if (hitSegment == 3) ballStateMachine = 2;
+			            else ballStateMachine = 3;
+			        } else if (paddleSize == 6) {
+			            // Map 6 positions to 4 angles
+			            if (hitSegment <= 1) ballStateMachine = 0;
+			            else if (hitSegment <= 2) ballStateMachine = 1;
+			            else if (hitSegment <= 3) ballStateMachine = 2;
+			            else ballStateMachine = 3;
+			        } else if (paddleSize == 8) {
+			            // Map 8 positions to 4 angles
+			            if (hitSegment <= 1) ballStateMachine = 0;      // First 2 positions
+			            else if (hitSegment <= 3) ballStateMachine = 1; // Next 2 positions
+			            else if (hitSegment <= 5) ballStateMachine = 2; // Next 2 positions
+			            else ballStateMachine = 3;                       // Last 2 positions
+			        }
 
-
-				}
+			        score++;
+			        LCD_update_score(score, pongHighScore);
+			    } else {
+			        lose = 1; // ggs
+			        if(score > pongHighScore){
+			            pongHighScore = score;
+			            LCD_new_high_score(score);
+			            gameWon = 1;
+			        }else{
+			            gameLoss = 1;
+			            LCD_game_over_pong(score);
+			            HAL_Delay(300);
+			        }
+			    }
 			}
 
 			for (int i = 0; i < numObstacles; i++){
