@@ -368,7 +368,7 @@ void LCD_update_bomb(int bombCnt, GameMode currentMode){
 //	LCD_PrintStr("Select Game Mode");
 //}
 
-void LCD_write_hello(int ms, int pong) {
+void LCD_write_hello(int ms, int pong, int pongHS) {
 	//int count = 0;
     LCD_Clear();
     LCD_Home();
@@ -399,12 +399,25 @@ void LCD_write_hello(int ms, int pong) {
 		LCD_SetCursor(0, 1);
 		LCD_PrintStr("GAME STARTING...");
 		HAL_Delay(1000);
-		for(uint8_t i = 4; i > 1; --i){
+		LCD_Clear();
+		LCD_Home();
+		for(uint8_t i = 3; i > 0; --i){
+			LCD_Clear();
 			char buffer[8];  // enough for numbers up to 999
 			sprintf(buffer, " %d", i);
+			LCD_SetCursor(8, 0);
+			LCD_PrintStr(buffer);
 			HAL_Delay(500);
 
 		}
+		LCD_Clear();
+		LCD_SetCursor(0, 0);
+		LCD_PrintStr("YOUR SCORE: ");
+		LCD_SetCursor(0, 1);
+		char buffer2[128];
+		sprintf(buffer2,"HIGH SCORE: %d", pongHS);
+		LCD_PrintStr(buffer2);
+
     }
 
 }
@@ -418,7 +431,7 @@ void LCD_select_game() {
     // Print second line normally
     LCD_SetCursor(0, 0);
     LCD_PrintStr("SELECT GAME...");
-	HAL_Delay(500);
+	HAL_Delay(1150);
 //    LCD_SetCursor(0, 1);
 //    LCD_PrintStr("MINESWEEPER (X) OR PONG (O)");
 //    for(int i = 0; i < 30; ++i){
@@ -436,6 +449,44 @@ void LCD_select_game() {
 	LCD_PrintStr("PONG (O)");
 
 
+}
+void LCD_update_score(int score) {
+	//int count = 0;
+    // Put full text on the first line (even if longer than 16 chars)
+    // Print second line normally
+	LCD_Home();
+    LCD_SetCursor(11, 0);
+    char buffer1[16];
+    if (score < 10) {
+            // One-digit number → print with leading space
+            sprintf(buffer1, " %d", score);
+        } else {
+            // Two-digit number → no leading space
+            sprintf(buffer1, "%d", score);
+        }
+
+    LCD_PrintStr(buffer1);
+
+}
+
+void LCD_game_over_pong(int score) {
+    char buffer[20];
+    LCD_Clear();
+    LCD_SetCursor(0, 0);
+    LCD_PrintStr("WOMP WOMP!");
+    LCD_SetCursor(0, 1);
+    sprintf(buffer, "Score: %d", score);
+    LCD_PrintStr(buffer);
+}
+
+void LCD_new_high_score(int score) {
+    char buffer[20];
+    LCD_Clear();
+    LCD_SetCursor(0, 0);
+    LCD_PrintStr("NEW HIGH SCORE!");
+    LCD_SetCursor(0, 1);
+    sprintf(buffer, "Score: %d", score);
+    LCD_PrintStr(buffer);
 }
 
 
