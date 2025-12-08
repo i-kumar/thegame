@@ -831,14 +831,20 @@ void PS2_ProcessButtons(uint16_t buttons) {
     }
     if (pressed & PS2_START){
     	gameSelect = 1;
+    	minesweeper = 0;
+    	pong = 0;
     	clearLED();
+    	//
+    	showLogo();
     	LCD_select_game();
-    	showLeds();
+
+    	//clearLED();
+		//showLogo();
+    	//showLeds();
     }
     if(gameSelect){
-    	//LCD_select_game();
-    	showLogo();
     	showLeds();
+
     	if (pressed & PS2_X) {
     		//LCD_PrintStr("X:GM");
     		minesweeper = 1;
@@ -914,6 +920,7 @@ void PS2_ProcessButtons(uint16_t buttons) {
 		}
 
 		if (pressed & PS2_TRIANGLE) {
+			testMode = 0;
 			Minesweeper_InitBoard();
 			firstXPress = 0;
 			cursorX = 0;
@@ -1207,6 +1214,10 @@ int main(void)
 //		}
 //
 //		//gameSelect = 0;
+	if(gameSelect){
+		//showLogo();
+		showLeds();
+	}
 //	}
 	if(minesweeper){
 //		LCD_write_hello(minesweeper, pong);

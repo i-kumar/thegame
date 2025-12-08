@@ -384,7 +384,7 @@ void LCD_write_hello(int ms, int pong) {
 		LCD_Clear();
 		LCD_Home();
 		LCD_SetCursor(0, 0);
-		LCD_PrintStr("SELECT GAME MDOE:");
+		LCD_PrintStr("SELECT GAME MODE:");
 		LCD_SetCursor(0, 1);
 		LCD_PrintStr("L1, R1 or R2");
     }else if (pong){
@@ -417,13 +417,14 @@ void LCD_select_game() {
     // Put full text on the first line (even if longer than 16 chars)
     // Print second line normally
     LCD_SetCursor(0, 0);
-    LCD_PrintStr("GAME SELECTION MODE......");
-    LCD_SetCursor(0, 1);
-    LCD_PrintStr("MINESWEEPER (X) OR PONG (O)");
-    for(int i = 0; i < 30; ++i){
-    	HAL_Delay(100);
-    	LCD_ScrollDisplayLeft();
-    }
+    LCD_PrintStr("SELECT GAME...");
+	HAL_Delay(500);
+//    LCD_SetCursor(0, 1);
+//    LCD_PrintStr("MINESWEEPER (X) OR PONG (O)");
+//    for(int i = 0; i < 30; ++i){
+//    	HAL_Delay(100);
+//    	LCD_ScrollDisplayLeft();
+//    }
     LCD_Clear();
 	LCD_Home();
 
