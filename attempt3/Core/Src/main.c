@@ -161,12 +161,12 @@ int michiganchordSupport[128]    = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 
 int michiganchordSupportTwo[128] = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, A4S,A4S,B4, B4, C5, C5, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00};
 
 //minesweeper variables
-#define PANEL_W 16   // physical LEDs per row
-#define PANEL_H 16   // physical rows
+#define PANEL_W 24   // physical LEDs per row
+#define PANEL_H 24   // physical rows
 int GRID_W = 16;
 int GRID_H = 16;
-#define MAX_W 16
-#define MAX_H 16
+#define MAX_W 24
+#define MAX_H 24
 
 int bombCount = 20; //(default medium)
 
@@ -1103,6 +1103,260 @@ void playMinesweeper(){
 
 
 
+//void playPong(){
+//	int ballX = 1;
+//	int ballY = 4;
+//	/*
+//	STATE MACHINE FOR BALL DIRECTION
+//	> UP:
+//	0 = left fast
+//	1 = left
+//	2 = right
+//	3 = right fast
+//	> DOWN
+//	4 = left fast
+//	5 = left
+//	6 = right
+//	7 = right fast
+//	*/
+//	int ballStateMachine = 3;
+//	// we don't want to move the ball every frame. The prescaler will move the ball every n frames
+//	int ballPrescaler = 2;
+//	int ballCurrN = 0;
+//	int lose = 0;
+//	//int paddleX = 6; // Start paddle in middle (range 0-12)
+//	int paddleX = 10;
+//	int score = 7;
+//	int paddleSize = 8;
+////	int obstacleX[3] = {6, 12, 18};  // Spread across width
+////	int obstacleY[3] = {12, 15, 12}; // Mid-height positions
+//	int obstacleX[3] = {4, 8, 12};  // Spread across width
+//	int obstacleY[3] = {8, 12, 8}; // Mid-height positions
+//
+//	int numObstacles = 0;
+//
+//	while (!lose){
+//		// Read PS2 controller
+//		if (score >= 25) ballPrescaler = 0;      // Very fast
+//		else if (score >= 18) ballPrescaler = 1; // Faster
+//		else if (score >= 12) ballPrescaler = 1; // Fast
+//		else if (score >= 6) ballPrescaler = 2;  // Medium (default)
+//
+//		// Paddle shrinks
+//		if (score >= 25) paddleSize = 2;         // Hard - half original size
+//		else if (score >= 20) paddleSize = 4;         // Hard - half original size
+//		else if (score >= 15) paddleSize = 5;    // Medium-hard
+//		else if (score >= 10) paddleSize = 6;    // Medium
+//		else paddleSize = 8;
+//
+//		if (score >= 15) numObstacles = 3;       // All 3 obstacles
+//		else if (score >= 8) numObstacles = 2;   // 2 obstacles
+//		else if (score >= 5) numObstacles = 1;   // 1 obstacle
+//		else numObstacles = 0;                    // No obstacles
+//
+//		uint16_t buttons;
+//		PS2_ReadController(&buttons);
+//
+//		// Update paddle position based on D-pad
+//		// Check for held buttons (not just pressed)
+//		if (!(buttons & PS2_LEFT)) {  // PS2_LEFT is pressed (bit 7 = 0 when pressed)
+//			paddleX--;
+//			if (paddleX < 0) paddleX = 0;
+//		}
+//		if (!(buttons & PS2_RIGHT)) {  // PS2_RIGHT is pressed (bit 5 = 0 when pressed)
+//			paddleX++;
+//			if (paddleX > (PANEL_W-paddleSize)) paddleX = PANEL_W-paddleSize;
+//		}
+//		if (!(buttons & PS2_TRIANGLE)) {
+//			lose = 1;
+//			playedLosingSoundEffect = 0;
+//			playedWinningSoundEffect = 0;
+//			gameOver = 1;
+//			gameLoss = 1;
+//			gameWon = 0;
+//			HAL_Delay(100);
+//			LCD_write_hello(0, pong, 0);
+//			HAL_Delay(500);
+//			lose = 0;
+//			score = 0;
+//		}
+//
+//	    if (!(buttons & PS2_START)){
+//	    	gameSelect = 1;
+//	    	minesweeper = 0;
+//	    	pong = 0;
+//	    	lose = 1;
+//	    	//HAL_Delay(200);
+//	    	clearLED();
+//	    	showLogo();
+//	    	LCD_select_game();
+//
+//	    	clearLED();
+//			//showLogo();
+//	    	//showLeds();
+//	    }
+//
+//
+//		// start drawing screen
+//		clearLED();
+//
+//		// draw paddle
+//		for (int i = paddleX; i < paddleX + paddleSize; i++){
+//		    setPixel(i, 1, 0, 50, 50);
+//		}
+//		for (int i = 0; i < numObstacles; i++){
+//		    setPixel(obstacleX[i], obstacleY[i], 50, 20, 0); // Orange
+//		}
+//
+//		// decide whether to move the ball
+//		if (ballCurrN < ballPrescaler){
+//			ballCurrN++;
+//			setPixel(ballX, ballY, 0, 50, 0);
+//		} else {
+//			ballCurrN = 0;
+//			// getting rid of edge cases
+//			if (ballX == 1){
+//				if (ballStateMachine == 0){
+//					ballStateMachine = 1;
+//				}
+//				if (ballStateMachine == 4){
+//					ballStateMachine = 5;
+//				}
+//			} else if (ballX == PANEL_W-2){
+//				if (ballStateMachine == 7){
+//					ballStateMachine = 6;
+//				}
+//				if (ballStateMachine == 3){
+//					ballStateMachine = 2;
+//				}
+//			}
+//			// left side bounce
+//			if (ballX == 0){
+//				if (ballStateMachine == 0) ballStateMachine = 3;
+//				if (ballStateMachine == 1) ballStateMachine = 2;
+//				if (ballStateMachine == 4) ballStateMachine = 7;
+//				if (ballStateMachine == 5) ballStateMachine = 6;
+//			}
+//			// right side bounce
+//			if (ballX == PANEL_W-1){
+//				if (ballStateMachine == 2) ballStateMachine = 1;
+//				if (ballStateMachine == 3) ballStateMachine = 0;
+//				if (ballStateMachine == 6) ballStateMachine = 5;
+//				if (ballStateMachine == 7) ballStateMachine = 4;
+//			}
+//			// top bounce
+//			if (ballY == PANEL_W-1){
+//				ballStateMachine += 4;
+//			}
+//			// bottom bounce
+//			// bottom bounce
+//			if (ballY == 2){
+//			    if (ballX >= paddleX && ballX < paddleX + paddleSize) {
+//			        // Calculate which segment was hit for angle
+//			        int hitSegment = ballX - paddleX;
+//
+//			        // Map hit position to angle based on paddle size
+//			        if (paddleSize == 2) {
+//			            ballStateMachine = (hitSegment == 0) ? 0 : 3;
+//			        } else if (paddleSize == 4) {
+//			            ballStateMachine = hitSegment; // Direct mapping
+//			        } else if (paddleSize == 5) {
+//			            // Map 5 positions to 4 angles
+//			            if (hitSegment == 0) ballStateMachine = 0;
+//			            else if (hitSegment <= 2) ballStateMachine = 1;
+//			            else if (hitSegment == 3) ballStateMachine = 2;
+//			            else ballStateMachine = 3;
+//			        } else if (paddleSize == 6) {
+//			            // Map 6 positions to 4 angles
+//			            if (hitSegment <= 1) ballStateMachine = 0;
+//			            else if (hitSegment <= 2) ballStateMachine = 1;
+//			            else if (hitSegment <= 3) ballStateMachine = 2;
+//			            else ballStateMachine = 3;
+//			        } else if (paddleSize == 8) {
+//			            // Map 8 positions to 4 angles
+//			            if (hitSegment <= 1) ballStateMachine = 0;      // First 2 positions
+//			            else if (hitSegment <= 3) ballStateMachine = 1; // Next 2 positions
+//			            else if (hitSegment <= 5) ballStateMachine = 2; // Next 2 positions
+//			            else ballStateMachine = 3;                       // Last 2 positions
+//			        }
+//
+//			        score++;
+//			        LCD_update_score(score, pongHighScore);
+//			    } else {
+//			        lose = 1; // ggs
+//			        if(score > pongHighScore){
+//			            pongHighScore = score;
+//			            LCD_new_high_score(score);
+//			            gameWon = 1;
+//			        }else{
+//			            gameLoss = 1;
+//			            LCD_game_over_pong(score);
+//			            HAL_Delay(300);
+//			        }
+//			    }
+//			}
+//
+//			for (int i = 0; i < numObstacles; i++){
+//			    if (ballX == obstacleX[i] && ballY == obstacleY[i]){
+//			        // Bounce off obstacle
+//			        if (ballStateMachine < 4) ballStateMachine += 4; // Going up -> down
+//			        else ballStateMachine -= 4; // Going down -> up
+//			    }
+//			}
+//
+//			// animate ball
+//			if (ballStateMachine == 0){
+//				ballX -= 2;
+//				ballY += 1;
+//			} else if (ballStateMachine == 1){
+//				ballX -= 1;
+//				ballY += 1;
+//			} else if (ballStateMachine == 2){
+//				ballX += 1;
+//				ballY += 1;
+//			} else if (ballStateMachine == 3){
+//				ballX += 2;
+//				ballY += 1;
+//			} else if (ballStateMachine == 4){
+//				ballX -= 2;
+//				ballY -= 1;
+//			} else if (ballStateMachine == 5){
+//				ballX -= 1;
+//				ballY -= 1;
+//			} else if (ballStateMachine == 6){
+//				ballX += 1;
+//				ballY -= 1;
+//			} else if (ballStateMachine == 7){
+//				ballX += 2;
+//				ballY -= 1;
+//			}
+//			setPixel(ballX, ballY, 0, 50, 0);
+//		}
+//		showLeds();
+//		HAL_Delay(30);
+//	}
+//	// lose animation
+//	if(gameLoss){
+//		for (int j = PANEL_W-1; j >= 0; j--){
+//			for (int i = 0; i < PANEL_W-1; i++){
+//				setPixel(i, j, 50, 0, 0);
+//			}
+//			showLeds();
+//			HAL_Delay(50);
+//		}
+//	}
+//	else if(gameWon){
+//		for (int j = PANEL_W-1; j >= 0; j--){
+//			for (int i = 0; i < PANEL_W-1; i++){
+//				setPixel(i, j, 0, 50, 0);
+//			}
+//			showLeds();
+//			HAL_Delay(50);
+//		}
+//	}
+//	gameSelect = 1;
+//}
+
 void playPong(){
 	int ballX = 1;
 	int ballY = 4;
@@ -1125,37 +1379,32 @@ void playPong(){
 	int ballCurrN = 0;
 	int lose = 0;
 	int paddleX = 6; // Start paddle in middle (range 0-12)
-	//int paddleX = 10;
-	int score = 7;
-	int paddleSize = 8;
-//	int obstacleX[3] = {6, 12, 18};  // Spread across width
-//	int obstacleY[3] = {12, 15, 12}; // Mid-height positions
+	int score = 0;
+
 	int obstacleX[3] = {4, 8, 12};  // Spread across width
 	int obstacleY[3] = {8, 12, 8}; // Mid-height positions
+//
+		int numObstacles = 0;
 
-	int numObstacles = 0;
+		while (!lose){
+			uint16_t buttons;
+			PS2_ReadController(&buttons);
 
-	while (!lose){
+			// Read PS2 controller
+//			if (score >= 25) ballPrescaler = 0;      // Very fast
+//			else if (score >= 20) ballPrescaler = 1; // Faster
+//			else if (score >= 14) ballPrescaler = 1; // Fast
+//			else if (score >= 10) ballPrescaler = 2;  // Medium (default)
+////
+////			// Paddle shrinks
+//			if (score >= 25) paddleSize = 1;         // Hard - half original size
+//			else if (score >= 20) paddleSize = 2;         // Hard - half original size
+//			else if (score >= 10) paddleSize = 3;    // Medium
+//			else paddleSize = 4;
+                    // No obstacles
+
+
 		// Read PS2 controller
-		if (score >= 25) ballPrescaler = 0;      // Very fast
-		else if (score >= 18) ballPrescaler = 1; // Faster
-		else if (score >= 12) ballPrescaler = 1; // Fast
-		else if (score >= 6) ballPrescaler = 2;  // Medium (default)
-
-		// Paddle shrinks
-		if (score >= 25) paddleSize = 2;         // Hard - half original size
-		else if (score >= 20) paddleSize = 4;         // Hard - half original size
-		else if (score >= 15) paddleSize = 5;    // Medium-hard
-		else if (score >= 10) paddleSize = 6;    // Medium
-		else paddleSize = 8;
-
-		if (score >= 15) numObstacles = 3;       // All 3 obstacles
-		else if (score >= 8) numObstacles = 2;   // 2 obstacles
-		else if (score >= 5) numObstacles = 1;   // 1 obstacle
-		else numObstacles = 0;                    // No obstacles
-
-		uint16_t buttons;
-		PS2_ReadController(&buttons);
 
 		// Update paddle position based on D-pad
 		// Check for held buttons (not just pressed)
@@ -1165,7 +1414,7 @@ void playPong(){
 		}
 		if (!(buttons & PS2_RIGHT)) {  // PS2_RIGHT is pressed (bit 5 = 0 when pressed)
 			paddleX++;
-			if (paddleX > (PANEL_W-paddleSize)) paddleX = PANEL_W-paddleSize;
+			if (paddleX > 12) paddleX = 12;
 		}
 		if (!(buttons & PS2_TRIANGLE)) {
 			lose = 1;
@@ -1175,7 +1424,7 @@ void playPong(){
 			gameLoss = 1;
 			gameWon = 0;
 			HAL_Delay(100);
-			LCD_write_hello(0, pong, 0);
+			LCD_write_hello(0, pong, pongHighScore);
 			HAL_Delay(500);
 			lose = 0;
 			score = 0;
@@ -1186,12 +1435,12 @@ void playPong(){
 	    	minesweeper = 0;
 	    	pong = 0;
 	    	lose = 1;
-	    	//HAL_Delay(200);
+	    	HAL_Delay(200);
 	    	clearLED();
 	    	showLogo();
 	    	LCD_select_game();
 
-	    	clearLED();
+	    	//clearLED();
 			//showLogo();
 	    	//showLeds();
 	    }
@@ -1201,11 +1450,8 @@ void playPong(){
 		clearLED();
 
 		// draw paddle
-		for (int i = paddleX; i < paddleX + paddleSize; i++){
-		    setPixel(i, 1, 0, 50, 50);
-		}
-		for (int i = 0; i < numObstacles; i++){
-		    setPixel(obstacleX[i], obstacleY[i], 50, 20, 0); // Orange
+		for (int i = paddleX; i < paddleX + 4; i++){
+			setPixel(i, 1, 0, 50, 50);
 		}
 
 		// decide whether to move the ball
@@ -1222,7 +1468,7 @@ void playPong(){
 				if (ballStateMachine == 4){
 					ballStateMachine = 5;
 				}
-			} else if (ballX == PANEL_W-2){
+			} else if (ballX == 14){
 				if (ballStateMachine == 7){
 					ballStateMachine = 6;
 				}
@@ -1238,72 +1484,54 @@ void playPong(){
 				if (ballStateMachine == 5) ballStateMachine = 6;
 			}
 			// right side bounce
-			if (ballX == PANEL_W-1){
+			if (ballX == 15){
 				if (ballStateMachine == 2) ballStateMachine = 1;
 				if (ballStateMachine == 3) ballStateMachine = 0;
 				if (ballStateMachine == 6) ballStateMachine = 5;
 				if (ballStateMachine == 7) ballStateMachine = 4;
 			}
 			// top bounce
-			if (ballY == PANEL_W-1){
+			if (ballY == 15){
 				ballStateMachine += 4;
 			}
 			// bottom bounce
-			// bottom bounce
 			if (ballY == 2){
-			    if (ballX >= paddleX && ballX < paddleX + paddleSize) {
-			        // Calculate which segment was hit for angle
-			        int hitSegment = ballX - paddleX;
+				if (ballX == paddleX){
+					ballStateMachine = 0;
+					score++;  // Increment score on paddle hit
+					LCD_update_score(score, pongHighScore);  // Update LCD display
+				} else if (ballX == paddleX + 1){
+					ballStateMachine = 1;
+					score++;  // Increment score on paddle hit
+					LCD_update_score(score, pongHighScore);  // Update LCD display
+				} else if (ballX == paddleX + 2){
+					ballStateMachine = 2;
+					score++;  // Increment score on paddle hit
+					LCD_update_score(score, pongHighScore);  // Update LCD display
+				} else if (ballX == paddleX + 3){
+					ballStateMachine = 3;
+					score++;  // Increment score on paddle hit
+					LCD_update_score(score, pongHighScore);  // Update LCD display
+				} else {
+					lose = 1; // ggs
+					if(score > pongHighScore){
+						pongHighScore = score;
+						LCD_new_high_score(score);
+						gameWon = 1;
+						lose = 0;
+						gameSelect = 1;
+					}else{
+						gameLoss = 1;
+						lose = 0;
+						LCD_game_over_pong(score);
+						HAL_Delay(300);
+						gameSelect = 1;
 
-			        // Map hit position to angle based on paddle size
-			        if (paddleSize == 2) {
-			            ballStateMachine = (hitSegment == 0) ? 0 : 3;
-			        } else if (paddleSize == 4) {
-			            ballStateMachine = hitSegment; // Direct mapping
-			        } else if (paddleSize == 5) {
-			            // Map 5 positions to 4 angles
-			            if (hitSegment == 0) ballStateMachine = 0;
-			            else if (hitSegment <= 2) ballStateMachine = 1;
-			            else if (hitSegment == 3) ballStateMachine = 2;
-			            else ballStateMachine = 3;
-			        } else if (paddleSize == 6) {
-			            // Map 6 positions to 4 angles
-			            if (hitSegment <= 1) ballStateMachine = 0;
-			            else if (hitSegment <= 2) ballStateMachine = 1;
-			            else if (hitSegment <= 3) ballStateMachine = 2;
-			            else ballStateMachine = 3;
-			        } else if (paddleSize == 8) {
-			            // Map 8 positions to 4 angles
-			            if (hitSegment <= 1) ballStateMachine = 0;      // First 2 positions
-			            else if (hitSegment <= 3) ballStateMachine = 1; // Next 2 positions
-			            else if (hitSegment <= 5) ballStateMachine = 2; // Next 2 positions
-			            else ballStateMachine = 3;                       // Last 2 positions
-			        }
+					}
 
-			        score++;
-			        LCD_update_score(score, pongHighScore);
-			    } else {
-			        lose = 1; // ggs
-			        if(score > pongHighScore){
-			            pongHighScore = score;
-			            LCD_new_high_score(score);
-			            gameWon = 1;
-			        }else{
-			            gameLoss = 1;
-			            LCD_game_over_pong(score);
-			            HAL_Delay(300);
-			        }
-			    }
+
+				}
 			}
-
-			for (int i = 0; i < numObstacles; i++){
-			    if (ballX == obstacleX[i] && ballY == obstacleY[i]){
-			        // Bounce off obstacle
-			        if (ballStateMachine < 4) ballStateMachine += 4; // Going up -> down
-			        else ballStateMachine -= 4; // Going down -> up
-			    }
-			}
-
 			// animate ball
 			if (ballStateMachine == 0){
 				ballX -= 2;
@@ -1336,26 +1564,17 @@ void playPong(){
 		HAL_Delay(30);
 	}
 	// lose animation
-	if(gameLoss){
-		for (int j = PANEL_W; j >= 0; j--){
-			for (int i = 0; i < PANEL_W; i++){
-				setPixel(i, j, 50, 0, 0);
-			}
-			showLeds();
-			HAL_Delay(50);
+	for (int j = 16; j >= 0; j--){
+		for (int i = 0; i < 16; i++){
+			setPixel(i, j, 50, 0, 0);
 		}
+		showLeds();
+		HAL_Delay(50);
 	}
-	else if(gameWon){
-		for (int j = PANEL_W; j >= 0; j--){
-			for (int i = 0; i < PANEL_W; i++){
-				setPixel(i, j, 0, 50, 0);
-			}
-			showLeds();
-			HAL_Delay(50);
-		}
-	}
-	gameSelect = 1;
 }
+
+
+
 
 /* USER CODE END 0 */
 
