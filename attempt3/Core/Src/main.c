@@ -161,12 +161,12 @@ int michiganchordSupport[128]    = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 
 int michiganchordSupportTwo[128] = {00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, A4S,A4S,B4, B4, C5, C5, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00};
 
 //minesweeper variables
-#define PANEL_W 24   // physical LEDs per row
-#define PANEL_H 24   // physical rows
+#define PANEL_W 16   // physical LEDs per row
+#define PANEL_H 16   // physical rows
 int GRID_W = 16;
 int GRID_H = 16;
-#define MAX_W 24
-#define MAX_H 24
+#define MAX_W 16
+#define MAX_H 16
 
 int bombCount = 20; //(default medium)
 
@@ -208,7 +208,7 @@ int gameStart = 0;
 int winPulseTimer = 0;
 int testMode = 0;
 int flagsPlaced = 0;
-
+int mineSweeper_initialized = 0;
 
 int floodAnimating = 0;
 int floodAnimFrame = 0;
@@ -223,6 +223,9 @@ int playedLosingSoundEffect = 0;
 int playedWinningSoundEffect = 0;
 int writeMode = 0;
 int writePlaying = 0;
+int gameSelect = 1;
+int minesweeper = 0;
+int pong = 0;
 
 
 
@@ -266,7 +269,7 @@ Voice voices[MAX_VOICES];
 uint8_t audioInitialized = 0;
 
 //brightness variable
-uint8_t brightness = 150;
+uint8_t brightness = 40;
 
 int playingTheme = 0; //0 = theme 1 = win music
 
@@ -287,7 +290,7 @@ void LCD_Init(I2C_HandleTypeDef *hi2c);
 void LCD_game_win(void);
 void LCD_game_loss(void);
 void LCD_write_test(void);
-void LCD_write_hello(void);
+void LCD_write_hello(int ms, int pong);
 void LCD_set_bomb(GameMode mode);
 void LCD_game_mode(GameMode mode);
 void LCD_update_bomb(int bombCnt, GameMode mode);
@@ -433,6 +436,7 @@ void PlayNote(int voiceIndex, float freq) {
 
 void Minesweeper_InitBoard(void) {
     // 0) Reset state
+	mineSweeper_initialized = 1;
 	flagsPlaced = 0;
     gameOver = 0;
     gameWon  = 0;
@@ -824,119 +828,156 @@ void PS2_ProcessButtons(uint16_t buttons) {
     if (pressed == 0) {
         return;
     }
-
-    if (pressed & PS2_UP) {
-    	if (cursorY == GRID_H - 1){
-    		cursorY = 0;
-    	} else {
-    		cursorY++;
-    	}
+    if (pressed & PS2_START){
+    	gameSelect = 1;
+    	LCD_select_game();
     }
-
-    if (pressed & PS2_DOWN) {
-    	if (cursorY == 0){
-    		cursorY = GRID_H - 1;
-    	} else {
-    		cursorY--;
-    	}
-    }
-
-    if (pressed & PS2_LEFT) {
-    	if (cursorX == 0){
-    		cursorX = GRID_W - 1;
-    	} else {
-    		cursorX--;
-    	}
-    }
-
-    if (pressed & PS2_RIGHT) {
-    	if (cursorX == GRID_W - 1){
-    		cursorX = 0;
-    	} else {
-    		cursorX++;
-    	}
-    }
-
-    if (pressed & PS2_X) {
-    	writePlaying = 1;
-    	if(!firstXPress){
-    		LCD_set_bomb(currentMode);
-    		firstXPress = 1;
+    if(gameSelect){
+    	LCD_PrintStr("836");
+    	LCD_select_game();
+    	if (pressed & PS2_X) {
+    		LCD_PrintStr("X:GM");
+    		minesweeper = 1;
+			pong = 0;
+			gameSelect = 0;
+			playMinesweeper();
+			LCD_write_hello(minesweeper, pong);
 
     	}
-    	if (writePlaying) {             // executes only once per press
-    	    writePlaying = 0;           // clear it immediately so no flicker
-    	}
 
-    	onXPress();
-    }
-                // always run the X action
+		if(pressed & PS2_CIRCLE){
+			LCD_PrintStr("O:GM");
+			minesweeper = 0;
+			pong = 1;
+			gameSelect = 0;
+			LCD_write_hello(minesweeper, pong);
 
-
-    if (pressed & PS2_CIRCLE) { //minsweeper flag
-        toggleFlagAtCursor();
-        flagSoundToggle = 1;
-    }
-
-    if (pressed & PS2_TRIANGLE) {
-        Minesweeper_InitBoard();
-        firstXPress = 0;
-        cursorX = 0;
-        cursorY = 0;
-        playedLosingSoundEffect = 0;
-        playedWinningSoundEffect = 0;
-        writePlaying = 1;
-        if(writePlaying){
-        	LCD_write_hello();
-        	writePlaying = 0;
-        }
-
-    }
-    if (pressed & PS2_SQUARE) {
-        // tyoggle test
-        if (testMode == 0) {
-            testMode = 1;  // enter  test mode
-        } else {
-            testMode = 0;  // go back to normal random mode
-        }
-        writeMode = 0;
-        if(!writeMode){
-            LCD_write_test();
-			writeMode = 1;
 		}
 
-        Minesweeper_InitBoard();  // rebuild board using new mode
-        cursorX = 0;
-        cursorY = 0;
     }
-    //CHANGE TO OPEN THINGS
-    if (pressed & PS2_L1) {
-    	writeMode = 0;// easy mode
+    if(minesweeper){
+		if (pressed & PS2_UP) {
+			if (cursorY == GRID_H - 1){
+				cursorY = 0;
+			} else {
+				cursorY++;
+			}
+		}
 
-        SetGameMode(MODE_EASY);
-        if(!writeMode){
-        	LCD_game_mode(MODE_EASY);
-        	writeMode = 1;
-        }
+		if (pressed & PS2_DOWN) {
+			if (cursorY == 0){
+				cursorY = GRID_H - 1;
+			} else {
+				cursorY--;
+			}
+		}
 
+		if (pressed & PS2_LEFT) {
+			if (cursorX == 0){
+				cursorX = GRID_W - 1;
+			} else {
+				cursorX--;
+			}
+		}
+
+		if (pressed & PS2_RIGHT) {
+			if (cursorX == GRID_W - 1){
+				cursorX = 0;
+			} else {
+				cursorX++;
+			}
+		}
+
+		if (pressed & PS2_X) {
+			writePlaying = 1;
+			if(!firstXPress){
+				LCD_set_bomb(currentMode);
+				firstXPress = 1;
+
+			}
+			if (writePlaying) {             // executes only once per press
+				writePlaying = 0;           // clear it immediately so no flicker
+			}
+
+			onXPress();
+		}
+					// always run the X action
+
+
+		if (pressed & PS2_CIRCLE) { //minsweeper flag
+			toggleFlagAtCursor();
+			flagSoundToggle = 1;
+		}
+
+		if (pressed & PS2_TRIANGLE) {
+			Minesweeper_InitBoard();
+			firstXPress = 0;
+			cursorX = 0;
+			cursorY = 0;
+			playedLosingSoundEffect = 0;
+			playedWinningSoundEffect = 0;
+			writePlaying = 1;
+			if(writePlaying){
+				LCD_write_hello(minesweeper, pong);
+				writePlaying = 0;
+			}
+
+		}
+		if (pressed & PS2_SQUARE) {
+			// tyoggle test
+			if (testMode == 0) {
+				testMode = 1;  // enter  test mode
+			} else {
+				testMode = 0;  // go back to normal random mode
+			}
+			writeMode = 0;
+			if(!writeMode && testMode){
+				LCD_write_test();
+				writeMode = 1;
+			}
+
+			writeMode = 0;
+			if(!writeMode && !testMode){
+				LCD_game_mode(currentMode);
+				writeMode = 1;
+			}
+
+			Minesweeper_InitBoard();  // rebuild board using new mode
+			cursorX = 0;
+			cursorY = 0;
+		}
+		//CHANGE TO OPEN THINGS
+		if (pressed & PS2_L1) {
+			writeMode = 0;// easy mode
+
+			SetGameMode(MODE_EASY);
+			if(!writeMode){
+				LCD_game_mode(MODE_EASY);
+				writeMode = 1;
+			}
+
+		}
+
+		if (pressed & PS2_R1) {                // medium mode
+			writeMode = 0;
+			SetGameMode(MODE_MEDIUM);
+			if(!writeMode){
+				LCD_game_mode(MODE_MEDIUM);
+				writeMode = 1;
+			}
+		}
+
+		if (pressed & PS2_R2) {                // hard mode
+			writeMode = 0;
+			SetGameMode(MODE_HARD);
+			if(!writeMode){
+				LCD_game_mode(MODE_HARD);
+				writeMode = 1;
+			}
+		}
     }
-
-    if (pressed & PS2_R1) {                // medium mode
-    	writeMode = 0;
-        SetGameMode(MODE_MEDIUM);
-        if(!writeMode){
-        	LCD_game_mode(MODE_MEDIUM);
-        	writeMode = 1;
-        }
-    }
-
-    if (pressed & PS2_R2) {                // hard mode
-    	writeMode = 0;
-        SetGameMode(MODE_HARD);
-        if(!writeMode){
-        	LCD_game_mode(MODE_HARD);
-        	writeMode = 1;
-        }
+    if(pong){
+    	//do something here
     }
 
 }
@@ -1022,6 +1063,13 @@ void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b){
   storage[realIndex] = (struct ledData){r, g, b};
 }
 
+void playMinesweeper(){
+	Minesweeper_InitBoard();
+	Minesweeper_Render();  // draw entire board + cursor into storage[]
+	showLeds();            // send storage[] out via DMAf
+
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -1068,8 +1116,7 @@ int main(void)
   //HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, pwmData, 4);
   //HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 
-    PS2_Init();
-    Minesweeper_InitBoard();
+  PS2_Init();
 
   /* USER CODE END 2 */
 
@@ -1139,19 +1186,38 @@ int main(void)
 	}
 
 	PS2_MainTask();        // read controller, update cursor + buttons
-    Minesweeper_Render();  // draw entire board + cursor into storage[]
-    showLeds();            // send storage[] out via DMAf
+//	if(gameSelect){
+//		writeMode = 0;
+//		if(writeMode){
+//			LCD_select_game();
+//			writeMode = 1;
+//		}
+//
+//		//gameSelect = 0;
+//	}
+//	if(minesweeper){
+//		LCD_write_hello(minesweeper, pong);
+//		if(!mineSweeper_initialized){
+//			Minesweeper_InitBoard();
+//		}
+//		Minesweeper_Render();  // draw entire board + cursor into storage[]
+//		showLeds();            // send storage[] out via DMAf
+//	}
+//	if(pong){
+//		LCD_write_hello(minesweeper, pong);
+//	}
+
 
     if (gameWon) {
         winPulseTimer++;
 
     }
-    if(!firstXPress){
-    	if(!writeMode){
-    		LCD_write_hello();
-    		writeMode = 1;
-    	}
-    }
+//    if(!firstXPress){
+//    	if(!writeMode){
+//    		LCD_write_hello(minesweeper, pong);
+//    		writeMode = 1;
+//    	}
+//    }
     //anjimattion
     if (floodAnimating) {
         floodAnimTimer++;

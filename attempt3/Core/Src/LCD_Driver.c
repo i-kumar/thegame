@@ -173,6 +173,21 @@ void LCD_ResetDisplayShift(void)
 //    lcd_send(LCD_CURSORSHIFT | LCD_DISPLAYMOVE | LCD_MOVELEFT, 0);
 //}
 
+//void LCD_ScrollText(const char *text, uint16_t delayMs)
+//{
+//    LCD_Clear();
+//    LCD_Home();
+//    LCD_SetCursor(0, 0);
+//    LCD_PrintStr(text);
+//
+//    // Scroll the display left for each character
+//    for (int i = 0; i < strlen(text); i++) {
+//        HAL_Delay(delayMs);
+//        LCD_ScrollDisplayLeft();
+//    }
+//}
+
+
 
 void LCD_LeftToRight()
 {
@@ -340,16 +355,92 @@ void LCD_update_bomb(int bombCnt, GameMode currentMode){
         LCD_PrintStr(" out of 40");
 }
 
-void LCD_write_hello(){
-	LCD_Clear();
-	LCD_Home();
-	LCD_SetCursor(0, 0);
-	LCD_PrintStr("Welcome:");
-	LCD_SetCursor(0, 1);
-	LCD_PrintStr("To Minesweeper");
+//void LCD_write_hello(){
+//	LCD_Clear();
+//	LCD_Home();
+//	LCD_SetCursor(0, 0);
+//	LCD_PrintStr("Welcome to Minesweeper:");
+//	LCD_SetCursor(0, 1);
+//	LCD_PrintStr("Select Game Mode");
+//}
+
+void LCD_write_hello(int ms, int pong) {
+	//int count = 0;
+    LCD_Clear();
+    LCD_Home();
+
+    // Put full text on the first line (even if longer than 16 chars)
+    // Print second line normally
+    if(ms){
+		LCD_SetCursor(0, 0);
+		LCD_PrintStr("YOU ARE PLAYING:");
+		LCD_SetCursor(0, 1);
+		LCD_PrintStr("MINESWEEPER");
+		HAL_Delay(1500);
+		LCD_Clear();
+		LCD_Home();
+		LCD_SetCursor(0, 0);
+		LCD_PrintStr("Select Game Mode:");
+		LCD_SetCursor(0, 1);
+		LCD_PrintStr("L1, R1 or R2");
+    }else if (pong){
+    	LCD_SetCursor(0, 0);
+		LCD_PrintStr("YOU ARE PLAYING:");
+		LCD_SetCursor(0, 1);
+		LCD_PrintStr("PONG");
+		LCD_Clear();
+		LCD_Home();
+		LCD_SetCursor(0, 0);
+		LCD_PrintStr("USE DPAD TO PLAY");
+		LCD_SetCursor(0, 1);
+		LCD_PrintStr("GAME STARTING...");
+		HAL_Delay(1000);
+		for(uint8_t i = 4; i > 1; --i){
+			char buffer[8];  // enough for numbers up to 999
+			sprintf(buffer, " %d", i);
+			HAL_Delay(500);
+
+		}
+    }
+
+}
+
+void LCD_select_game() {
+	//int count = 0;
+    LCD_Clear();
+    LCD_Home();
+
+    // Put full text on the first line (even if longer than 16 chars)
+    // Print second line normally
+    LCD_SetCursor(0, 0);
+    LCD_PrintStr("GAME SELECTION MODE......");
+    LCD_SetCursor(0, 1);
+    LCD_PrintStr("MINESWEEPER (X) OR PONG (O)");
+    for(int i = 0; i < 17; ++i){
+    	HAL_Delay(100);
+    	LCD_ScrollDisplayLeft();
+    }
+//    LCD_Clear();
+//	LCD_Home();
+//
+//	// Put full text on the first line (even if longer than 16 chars)
+//	// Print second line no   srmally
+//	LCD_SetCursor(0, 0);
+//	LCD_PrintStr("MINESWEEPER (X)");
+//	LCD_SetCursor(0, 1);
+//	LCD_PrintStr("PONG (O)");
 
 
 }
 
+
+    // Scroll first line
+    //while(count < 2){
+		//		count ++;
+//		if (count == 1){
+//			LCD_SetCursor(0, 0);
+//			LCD_Home();
+//		}
+   // }
 
 
