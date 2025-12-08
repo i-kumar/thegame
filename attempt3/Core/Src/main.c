@@ -266,7 +266,7 @@ Voice voices[MAX_VOICES];
 uint8_t audioInitialized = 0;
 
 //brightness variable
-uint8_t brightness = 40;
+uint8_t brightness = 150;
 
 int playingTheme = 0; //0 = theme 1 = win music
 
@@ -290,7 +290,7 @@ void LCD_write_test(void);
 void LCD_write_hello(void);
 void LCD_set_bomb(GameMode mode);
 void LCD_game_mode(GameMode mode);
-void LCD_update_bomb(int bombCnt);
+void LCD_update_bomb(int bombCnt, GameMode mode);
 void SetGameMode(GameMode mode);
 
 // PS2 Controller function prototypes
@@ -755,7 +755,7 @@ void toggleFlagAtCursor(void) {
 
     writeMode = 0;
     if (!writeMode) {
-        LCD_update_bomb(bombsRemaining);
+        LCD_update_bomb(bombsRemaining, currentMode);
         writeMode = 1;
     }
 }
@@ -1106,7 +1106,7 @@ int main(void)
 	}
 
 	// play music
-	if (prescalerForMusic < 3){
+	if (prescalerForMusic < 2){
 		prescalerForMusic++;
 	} else {
 		prescalerForMusic = 0;
@@ -1114,7 +1114,7 @@ int main(void)
 		// every 185 ms
 		if (currNote == 128) {
 			currNote = 0;
-		} else if(playingTheme){
+		} else if(!playingTheme){
 		    PlayNote(0, bass[currNote]);
 		    PlayNote(1, melody[currNote]);
 		    PlayNote(2, counterMelody[currNote]);

@@ -312,7 +312,7 @@ void LCD_set_bomb(GameMode mode){
 	}
 }
 
-void LCD_update_bomb(int bombCnt){
+void LCD_update_bomb(int bombCnt, GameMode currentMode){
     LCD_SetCursor(0, 1);
 
     // Clear the full line first (optional but safest)
@@ -332,12 +332,12 @@ void LCD_update_bomb(int bombCnt){
     LCD_PrintStr(buffer);
 
     // Re-print the static text
-//    if (currentMode == MODE_EASY)
-//        LCD_PrintStr(" out of 10");
-//    else if (currentMode == MODE_MEDIUM)
-//        LCD_PrintStr(" out of 30");
-//    else if (currentMode == MODE_HARD)
-//        LCD_PrintStr(" out of 40");
+    if (currentMode == MODE_EASY)
+        LCD_PrintStr(" out of 10");
+    else if (currentMode == MODE_MEDIUM)
+        LCD_PrintStr(" out of 30");
+    else if (currentMode == MODE_HARD)
+        LCD_PrintStr(" out of 40");
 }
 
 void LCD_write_hello(){
